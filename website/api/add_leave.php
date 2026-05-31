@@ -6,7 +6,7 @@ try {
     $data = json_decode($input, true);
     
     if (!$data) {
-        echo json_encode(['success' => false, 'message' => 'بيانات غير صالحة']);
+        echo json_encode(['success' => false, 'message' => 'Invalid data']);
         exit();
     }
     
@@ -20,45 +20,40 @@ try {
     $job_title = $data['jobTitle'] ?? '';
     
     if (empty($leave_number) || empty($id_number)) {
-        echo json_encode(['success' => false, 'message' => 'رمز الخدمة ورقم الهوية مطلوبان']);
+        echo json_encode(['success' => false, 'message' => 'Leave number and ID number are required']);
         exit();
     }
     
-    // Check if leave already exists
     $stmt = $db->prepare('SELECT id FROM leaves WHERE leave_number = :leave_number');
-    $stmt->bindValue(':leave_number', $leave_number, SQLITE3_TEXT);
-    $result = $stmt->execute();
+    $stmt->bindParam(':leave_number', $leave_number);
+    $stmt->execute();
     
-    if ($result->fetchArray()) {
-        // Update existing record
+    if ($stmt->fetch()) {
         $stmt = $db->prepare('UPDATE leaves SET name = :name, report_date = :report_date, entry_date = :entry_date, exit_date = :exit_date, doctor = :doctor, job_title = :job_title WHERE leave_number = :leave_number');
-        $stmt->bindValue(':name', $name, SQLITE3_TEXT);
-        $stmt->bindValue(':report_date', $report_date, SQLITE3_TEXT);
-        $stmt->bindValue(':entry_date', $entry_date, SQLITE3_TEXT);
-        $stmt->bindValue(':exit_date', $exit_date, SQLITE3_TEXT);
-        $stmt->bindValue(':doctor', $doctor, SQLITE3_TEXT);
-        $stmt->bindValue(':job_title', $job_title, SQLITE3_TEXT);
-        $stmt->bindValue(':leave_number', $leave_number, SQLITE3_TEXT);
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':report_date', $report_date);
+        $stmt->bindParam(':entry_date', $entry_date);
+        $stmt->bindParam(':exit_date', $exit_date);
+        $stmt->bindParam(':doctor', $doctor);
+        $stmt->bindParam(':job_title', $job_title);
+        $stmt->bindParam(':leave_number', $leave_number);
         $stmt->execute();
-        
-        echo json_encode(['success' => true, 'message' => 'تم تحديث بيانات الإجازة بنجاح', 'data' => ['leave_number' => $leave_number]]);
+        echo json_encode(['success' => true, 'message' => 'Leave updated successfully', 'data' => ['leave_number' => $leave_number]]);
     } else {
-        // Insert new record
         $stmt = $db->prepare('INSERT INTO leaves (leave_number, id_number, name, report_date, entry_date, exit_date, doctor, job_title) VALUES (:leave_number, :id_number, :name, :report_date, :entry_date, :exit_date, :doctor, :job_title)');
-        $stmt->bindValue(':leave_number', $leave_number, SQLITE3_TEXT);
-        $stmt->bindValue(':id_number', $id_number, SQLITE3_TEXT);
-        $stmt->bindValue(':name', $name, SQLITE3_TEXT);
-        $stmt->bindValue(':report_date', $report_date, SQLITE3_TEXT);
-        $stmt->bindValue(':entry_date', $entry_date, SQLITE3_TEXT);
-        $stmt->bindValue(':exit_date', $exit_date, SQLITE3_TEXT);
-        $stmt->bindValue(':doctor', $doctor, SQLITE3_TEXT);
-        $stmt->bindValue(':job_title', $job_title, SQLITE3_TEXT);
+        $stmt->bindParam(':leave_number', $leave_number);
+        $stmt->bindParam(':id_number', $id_number);
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':report_date', $report_date);
+        $stmt->bindParam(':entry_date', $entry_date);
+        $stmt->bindParam(':exit_date', $exit_date);
+        $stmt->bindParam(':doctor', $doctor);
+        $stmt->bindParam(':job_title', $job_title);
         $stmt->execute();
-        
-        echo json_encode(['success' => true, 'message' => 'تم حفظ بيانات الإجازة بنجاح', 'data' => ['leave_number' => $leave_number]]);
+        echo json_encode(['success' => true, 'message' => 'Leave saved successfully', 'data' => ['leave_number' => $leave_number]]);
     }
     
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'خطأ: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
 ?>
