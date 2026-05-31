@@ -5,10 +5,11 @@ import os
 BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', '7853478744')
 
-# API Settings
-API_BASE_URL = os.environ.get('API_BASE_URL', 'https://seha-project-new-master-production-7198.up.railway.app')
-API_ENDPOINT = '/api/add_leave.php'
+# API Settings - Node.js Backend
+API_BASE_URL = os.environ.get('API_BASE_URL', 'https://seha-project-main-production.up.railway.app')
+API_ENDPOINT = '/api/bot/add_leave'
 API_FULL_URL = API_BASE_URL + API_ENDPOINT
+BOT_API_KEY = os.environ.get('BOT_API_KEY', 'seha_bot_secret_key_2025')
 
 # Paths - Updated for current working directory
 FONTS_DIR = '/app/fonts'

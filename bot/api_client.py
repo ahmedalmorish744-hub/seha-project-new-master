@@ -9,7 +9,7 @@ import requests
 import json
 import logging
 from datetime import datetime
-from config_updated import API_FULL_URL
+from config_updated import API_FULL_URL, BOT_API_KEY
 
 # إعداد التسجيل
 logger = logging.getLogger(__name__)
@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 def calculate_days(admission_date, discharge_date):
     """حساب عدد الأيام بين تاريخين"""
     try:
-        # تحويل التواريخ من صيغة dd-mm-yyyy إلى datetime
         admission_parts = admission_date.split('-')
         discharge_parts = discharge_date.split('-')
         
@@ -26,7 +25,7 @@ def calculate_days(admission_date, discharge_date):
             discharge_dt = datetime(int(discharge_parts[2]), int(discharge_parts[1]), int(discharge_parts[0]))
             
             days = (discharge_dt - admission_dt).days + 1
-            return max(1, days)  # على الأقل يوم واحد
+            return max(1, days)
         else:
             return 1
     except Exception as e:
@@ -36,16 +35,10 @@ def calculate_days(admission_date, discharge_date):
 def generate_leave_id(id_number, admission_date, discharge_date):
     """توليد رمز الإجازة مطابق لما يتم في PDF"""
     try:
-        # PSL + رقم مكون من رقم الهوية وتاريخ الدخول والخروج (11 رقم)
         id_part = id_number[-4:] if len(id_number) >= 4 else id_number
-        
-        # استخراج الأرقام من التواريخ
         admission_nums = ''.join(filter(str.isdigit, admission_date))[-3:]
         discharge_nums = ''.join(filter(str.isdigit, discharge_date))[-4:]
-        
-        # تكوين الرقم (11 رقم)
         leave_number = (id_part + admission_nums + discharge_nums).ljust(11, '0')[:11]
-        
         return f"PSL{leave_number}"
     except Exception as e:
         logger.error(f"خطأ في توليد رمز الإجازة: {e}")
@@ -64,34 +57,46 @@ def convert_date_format(date_str):
 def send_leave_data_to_api(user_data):
     """إرسال بيانات الإجازة إلى API الموقع"""
     try:
-        # توليد رمز الإجازة
         leave_id = generate_leave_id(
             user_data.get('id_number', ''),
             user_data.get('admission_date_gregorian', ''),
             user_data.get('discharge_date_gregorian', '')
         )
         
-        # تحويل التواريخ إلى الصيغة المطلوبة
+        day_count = calculate_days(
+            user_data.get('admission_date_gregorian', ''),
+            user_data.get('discharge_date_gregorian', '')
+        )
+        
         report_date = convert_date_format(user_data.get('issue_date_gregorian', ''))
         entry_date = convert_date_format(user_data.get('admission_date_gregorian', ''))
         exit_date = convert_date_format(user_data.get('discharge_date_gregorian', ''))
         
-        # إعداد البيانات للإرسال
+        # إعداد البيانات للإرسال - مطابق لـ Node.js backend
         api_data = {
             'leaveNumber': leave_id,
             'idNumber': user_data.get('id_number', ''),
             'name': user_data.get('patient_name_ar', ''),
+            'nameEn': user_data.get('patient_name_en', ''),
             'reportDate': report_date,
             'entryDate': entry_date,
             'exitDate': exit_date,
+            'dayCount': day_count,
             'doctor': user_data.get('doctor_name_ar', ''),
-            'jobTitle': user_data.get('position_ar', '')
+            'doctorEn': user_data.get('doctor_name_en', ''),
+            'jobTitle': user_data.get('position_ar', ''),
+            'jobTitleEn': user_data.get('position_en', ''),
+            'employer': user_data.get('employer_ar', ''),
+            'employerEn': user_data.get('employer_en', ''),
+            'hospitalName': user_data.get('hospital_name_ar', ''),
+            'hospitalNameEn': user_data.get('hospital_name_en', ''),
+            'leaveType': 'sick'
         }
         
-        # إرسال البيانات
         headers = {
             'Content-Type': 'application/json; charset=utf-8',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'X-API-Key': BOT_API_KEY
         }
         
         logger.info(f"إرسال البيانات إلى API: {API_FULL_URL}")
@@ -104,7 +109,6 @@ def send_leave_data_to_api(user_data):
             timeout=30
         )
         
-        # التحقق من الاستجابة
         if response.status_code == 200:
             result = response.json()
             if result.get('success'):
@@ -153,17 +157,20 @@ def send_leave_data_to_api(user_data):
         }
 
 if __name__ == "__main__":
-    # اختبار سريع
     test_data = {
         'id_number': '1234567890',
         'patient_name_ar': 'أحمد محمد السعيد',
+        'patient_name_en': 'Ahmed Mohammed Al-Saeed',
         'issue_date_gregorian': '20-01-2025',
         'admission_date_gregorian': '18-01-2025',
         'discharge_date_gregorian': '20-01-2025',
         'doctor_name_ar': 'د. نبيل حنا نصر',
-        'position_ar': 'طبيب عام'
+        'doctor_name_en': 'Dr. Nabil Hanna Nasr',
+        'position_ar': 'طبيب عام',
+        'position_en': 'General Practitioner',
+        'employer_ar': 'طالب جامعي',
+        'employer_en': 'University Student'
     }
     
     result = send_leave_data_to_api(test_data)
     print(f"نتيجة الاختبار: {json.dumps(result, ensure_ascii=False, indent=2)}")
-
