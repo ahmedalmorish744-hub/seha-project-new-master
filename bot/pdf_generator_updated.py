@@ -533,3 +533,5 @@ if __name__ == "__main__":
     
     pdf_path = generate_sick_leave_pdf(test_data, 'test')
     print(f"تم إنشاء ملف PDF: {pdf_path}")
+
+# Build trigger: v2 - mixed text fix with LRE/PDF bidi controls
