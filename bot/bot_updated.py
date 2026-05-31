@@ -673,6 +673,16 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("🖼️ يرجى أولاً إرسال البيانات المنسقة أو استخدام الطريقة التقليدية لإنشاء التقرير.")
 
 def main() -> None:
+    # Debug: print token info
+    token_value = BOT_TOKEN
+    if token_value:
+        print(f"🔍 TELEGRAM_BOT_TOKEN env var: {os.environ.get("TELEGRAM_BOT_TOKEN", "NOT SET")}")
+        print(f"🔍 BOT_TOKEN first 10 chars: {token_value[:10]}...")
+        print(f"🔍 BOT_TOKEN length: {len(token_value)}")
+    else:
+        print("❌ BOT_TOKEN is EMPTY! TELEGRAM_BOT_TOKEN env var is not set!")
+        print(f"🔍 TELEGRAM_BOT_TOKEN env: {os.environ.get("TELEGRAM_BOT_TOKEN", "NOT SET")}")
+        return
     """الدالة الرئيسية لتشغيل البوت"""
     # إنشاء التطبيق
     application = Application.builder().token(BOT_TOKEN).build()
@@ -692,4 +702,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-
