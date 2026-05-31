@@ -120,7 +120,8 @@ class SickLeavePDF(FPDF):
                 
                 duration_days = (discharge_dt - admission_dt).days + 1
                 
-                duration_ar = f"{duration_days} يوم {admission_date_hijri} الى {discharge_date_hijri}"
+                # ✅ التعديل الأول: إضافة قوسين حول التواريخ الهجرية
+                duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
                 
                 # تكوين النص الإنجليزي
                 day_word = "day" if duration_days == 1 else "days"
@@ -128,13 +129,15 @@ class SickLeavePDF(FPDF):
                 
                 return duration_ar, duration_en
             else:
-                duration_ar = f"1 يوم {admission_date_hijri} الى {discharge_date_hijri}"
+                # ✅ التعديل الأول: إضافة قوسين هنا أيضاً
+                duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
                 
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            duration_ar = f"1 يوم {admission_date_hijri} الى {discharge_date_hijri}"
+            # ✅ التعديل الأول: إضافة قوسين هنا أيضاً
+            duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
     
@@ -185,6 +188,7 @@ class SickLeavePDF(FPDF):
         duration_ar_processed = self.process_arabic_text(duration_ar)
         
         # محتوى الجدول (بعد التبديل)
+        # ✅ التعديل الثاني: إضافة مسافة وشرطة مائلة ومسافة بين "الهوية" و"الإقامة"
         table_data = [
             # [العمود الرابع (إنجليزي), العمود الثالث (إنجليزي/بيانات), العمود الثاني (عربي/بيانات), العمود الأول (عربي)]
             ['Leave ID', leave_id, '', self.process_arabic_text('رمز الإجازة')],
@@ -193,7 +197,7 @@ class SickLeavePDF(FPDF):
             ['Discharge Date', processed_data.get('discharge_date_gregorian', ''), processed_data.get('discharge_date_hijri', ''), self.process_arabic_text('تاريخ الخروج')],
             ['Issue Date', processed_data.get('issue_date_gregorian', ''), '', self.process_arabic_text('تاريخ إصدار التقرير')],
             ['Name', processed_data.get('patient_name_en', ''), processed_data.get('patient_name_ar', ''), self.process_arabic_text('الاسم')],
-            ['National ID / Iqama', processed_data.get('id_number', ''), '', self.process_arabic_text('رقم الهوية/الإقامة')],
+            ['National ID / Iqama', processed_data.get('id_number', ''), '', self.process_arabic_text('رقم الهوية / الإقامة')],  # ✅ تم التعديل هنا
             ['Nationality', processed_data.get('nationality_en', ''), processed_data.get('nationality_ar', ''), self.process_arabic_text('الجنسية')],
             ['Employer', processed_data.get('employer_en', ''), processed_data.get('employer_ar', ''), self.process_arabic_text('جهة العمل')],
             ["Practitioner Name", processed_data.get("doctor_name_en", ""), processed_data.get("doctor_name_ar", ""), self.process_arabic_text("اسم الممارس")],
@@ -498,4 +502,3 @@ if __name__ == "__main__":
     
     pdf_path = generate_sick_leave_pdf(test_data, 'test')
     print(f"تم إنشاء ملف PDF: {pdf_path}")
-
