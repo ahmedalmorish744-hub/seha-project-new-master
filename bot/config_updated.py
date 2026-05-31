@@ -6,7 +6,7 @@ BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', '7853478744')
 
 # API Settings
-API_BASE_URL = os.environ.get('API_BASE_URL', 'https://80-iayzosfpiazlzday7ujjn-d2b18cd3.manusvm.computer')
+API_BASE_URL = os.environ.get('API_BASE_URL', 'https://seha-project-new-master-production-7198.up.railway.app')
 API_ENDPOINT = '/api/add_leave.php'
 API_FULL_URL = API_BASE_URL + API_ENDPOINT
 
