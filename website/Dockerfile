@@ -11,12 +11,13 @@ RUN a2enmod rewrite
 # Copy website files
 COPY . /var/www/html/
 
-# Create data directory for SQLite database
+# Create data directory for SQLite database and startup script
 RUN mkdir -p /var/www/html/data && chmod 777 /var/www/html/data
-
-# Configure Apache to use PORT env variable
-RUN sed -i 's/Listen 80/Listen ${PORT}/' /etc/apache2/ports.conf
-RUN sed -i 's/:80/:${PORT}/' /etc/apache2/sites-enabled/000-default.conf
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/data
+
+# Create startup script that configures PORT at runtime
+RUN echo '#!/bin/sh\nPORT_NUM=${PORT:-80}\necho "Starting Apache on port $PORT_NUM"\nsed -i "s/Listen 80/Listen $PORT_NUM/" /etc/apache2/ports.conf\nsed -i "s/:80/:$PORT_NUM/" /etc/apache2/sites-enabled/000-default.conf\napache2-foreground' > /start.sh && chmod +x /start.sh
+
+CMD ["/start.sh"]
