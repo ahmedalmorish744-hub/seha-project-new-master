@@ -1,16 +1,22 @@
-FROM nginx:alpine
-COPY . /usr/share/nginx/html
+FROM php:8.2-apache
 
-# Create nginx config template with a placeholder for PORT
-RUN cat > /etc/nginx/conf.d/default.conf << 'NGINX_CONF'
-server {
-    listen __PORT__;
-    location / {
-        root /usr/share/nginx/html;
-        index index.html;
-    }
-}
-NGINX_CONF
+# Enable SQLite3
+RUN apt-get update && apt-get install -y sqlite3 libsqlite3-dev && \
+    docker-php-ext-install sqlite3 pdo_sqlite && \
+    rm -rf /var/lib/apt/lists/*
 
-# At runtime: replace __PORT__ with Railway's PORT variable, then start nginx
-CMD sed -i "s/__PORT__/${PORT:-80}/" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'
+# Enable mod_rewrite
+RUN a2enmod rewrite
+
+# Copy website files
+COPY . /var/www/html/
+
+# Create data directory for SQLite database
+RUN mkdir -p /var/www/html/data && chmod 777 /var/www/html/data
+
+# Configure Apache to use PORT env variable
+RUN sed -i 's/Listen 80/Listen ${PORT}/' /etc/apache2/ports.conf
+RUN sed -i 's/:80/:${PORT}/' /etc/apache2/sites-enabled/000-default.conf
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html/data
