@@ -6,6 +6,7 @@ Enhanced PDF Generator for Seha Sick Leave Reports with Arabic Text Support - Up
 """
 
 import os
+import re
 import qrcode
 from datetime import datetime
 from fpdf import FPDF
@@ -14,6 +15,10 @@ from config_updated import *
 from config_updated import QR_DISPLAY_URL
 import arabic_reshaper
 from bidi.algorithm import get_display
+
+# أحرف تحكم BiDi لحماية التواريخ من الانعكاس
+LRE = '\u202A'  # Left-to-Right Embedding
+PDF_C = '\u202C'  # Pop Directional Formatting
 
 class SickLeavePDF(FPDF):
     def __init__(self):
@@ -43,7 +48,7 @@ class SickLeavePDF(FPDF):
             print(f"خطأ في تحميل الخطوط: {e}")
     
     def process_arabic_text(self, text):
-        """معالجة النص العربي لعرضه بشكل صحيح من اليمين لليسار"""
+        """معالجة النص العربي البحت لعرضه بشكل صحيح من اليمين لليسار"""
         if not text:
             return ""
         
@@ -55,6 +60,35 @@ class SickLeavePDF(FPDF):
             return bidi_text
         except Exception as e:
             print(f"خطأ في معالجة النص العربي: {e}")
+            return text
+    
+    def process_mixed_text(self, text):
+        """معالجة النصوص المختلطة (عربي + أرقام + أقواس) مع الحفاظ على الرموز والأقواس
+        
+        تستخدم هذه الدالة لخلايا مثل 'مدة الإجازة' التي تحتوي على:
+        - نص عربي (يوم، إلى)
+        - أرقام وتواريخ (1447-03-28)
+        - أقواس ورموز ( )
+        
+        الحل: حماية التواريخ بأحرف LRE/PDF ثم reshape + bidi مع base_dir='R'
+        """
+        if not text:
+            return ""
+        
+        try:
+            # حماية التواريخ بتنسيق YYYY-MM-DD أو DD-MM-YYYY من الانعكاس
+            def protect_date(m):
+                return LRE + m.group(0) + PDF_C
+            
+            protected = re.sub(r'\d{1,4}-\d{1,2}-\d{1,4}', protect_date, text)
+            
+            # إعادة تشكيل النص العربي (ربط الحروف)
+            reshaped_text = arabic_reshaper.reshape(protected)
+            # تطبيق bidi مع فرض اتجاه RTL للحفاظ على الأقواس
+            bidi_text = get_display(reshaped_text, base_dir='R')
+            return bidi_text
+        except Exception as e:
+            print(f"خطأ في معالجة النص المختلط: {e}")
             return text
     
     def add_header_images(self):
@@ -120,7 +154,8 @@ class SickLeavePDF(FPDF):
                 
                 duration_days = (discharge_dt - admission_dt).days + 1
                 
-                duration_ar = f"{duration_days} يوم {admission_date_hijri} الى {discharge_date_hijri}"
+                # النص العربي: عدد + يوم + (تاريخ من إلى تاريخ)
+                duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
                 
                 # تكوين النص الإنجليزي
                 day_word = "day" if duration_days == 1 else "days"
@@ -128,13 +163,13 @@ class SickLeavePDF(FPDF):
                 
                 return duration_ar, duration_en
             else:
-                duration_ar = f"1 يوم {admission_date_hijri} الى {discharge_date_hijri}"
+                duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
                 
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            duration_ar = f"1 يوم {admission_date_hijri} الى {discharge_date_hijri}"
+            duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
     
@@ -181,8 +216,8 @@ class SickLeavePDF(FPDF):
             else:
                 processed_data[key] = value
         
-        # معالجة النصوص الثابتة العربية
-        duration_ar_processed = self.process_arabic_text(duration_ar)
+        # معالجة نص مدة الإجازة باستخدام دالة النصوص المختلطة (لحفظ الأقواس)
+        duration_ar_processed = self.process_mixed_text(duration_ar)
         
         # محتوى الجدول (بعد التبديل)
         table_data = [
@@ -193,7 +228,7 @@ class SickLeavePDF(FPDF):
             ['Discharge Date', processed_data.get('discharge_date_gregorian', ''), processed_data.get('discharge_date_hijri', ''), self.process_arabic_text('تاريخ الخروج')],
             ['Issue Date', processed_data.get('issue_date_gregorian', ''), '', self.process_arabic_text('تاريخ إصدار التقرير')],
             ['Name', processed_data.get('patient_name_en', ''), processed_data.get('patient_name_ar', ''), self.process_arabic_text('الاسم')],
-            ['National ID / Iqama', processed_data.get('id_number', ''), '', self.process_arabic_text('رقم الهوية/الإقامة')],
+            ['National ID / Iqama', processed_data.get('id_number', ''), '', self.process_arabic_text('رقم الهوية / الإقامة')],
             ['Nationality', processed_data.get('nationality_en', ''), processed_data.get('nationality_ar', ''), self.process_arabic_text('الجنسية')],
             ['Employer', processed_data.get('employer_en', ''), processed_data.get('employer_ar', ''), self.process_arabic_text('جهة العمل')],
             ["Practitioner Name", processed_data.get("doctor_name_en", ""), processed_data.get("doctor_name_ar", ""), self.process_arabic_text("اسم الممارس")],
