@@ -120,8 +120,8 @@ class SickLeavePDF(FPDF):
                 
                 duration_days = (discharge_dt - admission_dt).days + 1
                 
-                # تكوين النص العربي
-                duration_ar = f"({admission_date_hijri} إلى {discharge_date_hijri}) يوم {duration_days}"
+                # تكوين النص العربي - الأقواس معكوسة لأن BiDi يعكسها للعربي
+                duration_ar = f") {admission_date_hijri} إلى {discharge_date_hijri} ( يوم {duration_days}"
                 
                 # تكوين النص الإنجليزي
                 day_word = "day" if duration_days == 1 else "days"
@@ -129,13 +129,13 @@ class SickLeavePDF(FPDF):
                 
                 return duration_ar, duration_en
             else:
-                duration_ar = f"({admission_date_hijri} إلى {discharge_date_hijri}) يوم 1"
+                duration_ar = f") {admission_date_hijri} إلى {discharge_date_hijri} ( يوم 1"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
                 
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            duration_ar = f"({admission_date_hijri} إلى {discharge_date_hijri}) يوم 1"
+            duration_ar = f") {admission_date_hijri} إلى {discharge_date_hijri} ( يوم 1"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
     
