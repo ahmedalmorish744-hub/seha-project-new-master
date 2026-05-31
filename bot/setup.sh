@@ -8,8 +8,8 @@ echo "🔧 Setting up Seha Sick Leave Bot..."
 
 # التحقق من وجود Python
 if ! command -v python3 &> /dev/null; then
-    echo "❌ Python غير مثبت. يرجى تثبيت Python 3.11 أو أحدث"
-    echo "❌ Python is not installed. Please install Python 3.11 or newer"
+    echo "❌ Python غير مثبت. يرجى تثبيت Python 3.9 أو أحدث"
+    echo "❌ Python is not installed. Please install Python 3.9 or newer"
     exit 1
 fi
 
@@ -77,8 +77,9 @@ echo "🎉 Project setup completed successfully!"
 echo ""
 echo "📝 الخطوات التالية:"
 echo "📝 Next steps:"
-echo "1. تحديث رمز البوت في ملف config.py"
-echo "1. Update bot token in config.py"
+echo "1. تعيين متغير البيئة TELEGRAM_BOT_TOKEN"
+echo "1. Set TELEGRAM_BOT_TOKEN environment variable"
+echo "   export TELEGRAM_BOT_TOKEN=your_bot_token_here"
 echo "2. تشغيل البوت باستخدام: ./start_bot.sh"
 echo "2. Start the bot using: ./start_bot.sh"
 echo ""
