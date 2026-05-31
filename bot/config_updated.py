@@ -1,10 +1,12 @@
 # Configuration file for Seha Sick Leave Bot - Updated Version
 
-BOT_TOKEN = '8146069383:AAGaiNYOM22xQVp2PJ6Zv9nZnbo1EThjlSY'
-ADMIN_USER_ID = '7059256157'
+import os
+
+BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+ADMIN_USER_ID = os.environ.get('ADMIN_USER_ID', '7853478744')
 
 # API Settings
-API_BASE_URL = 'https://80-iayzosfpiazlzday7ujjn-d2b18cd3.manusvm.computer' # يمكن تغييرها حسب عنوان الخادم
+API_BASE_URL = os.environ.get('API_BASE_URL', 'https://80-iayzosfpiazlzday7ujjn-d2b18cd3.manusvm.computer')
 API_ENDPOINT = '/api/add_leave.php'
 API_FULL_URL = API_BASE_URL + API_ENDPOINT
 
@@ -32,4 +34,3 @@ QR_URL = 'https://www.seha.sa/#/inquiries/slenquiry'
 # PDF settings
 PDF_WIDTH = 297  # mm
 PDF_HEIGHT = 419  # mm
-
