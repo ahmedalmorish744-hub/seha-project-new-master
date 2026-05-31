@@ -17,8 +17,7 @@ from bidi.algorithm import get_display
 
 # رسالة تحقق من إصدار الكود
 print("=" * 50)
-print("PDF Generator v4 - safe_arabic_mixed Fix Active")
-print("Features: get_display only for mixed text (no reshape)")
+print("PDF Generator v3 - Standard Arabic Processing")
 print("=" * 50)
 
 class SickLeavePDF(FPDF):
@@ -63,28 +62,6 @@ class SickLeavePDF(FPDF):
             return bidi_text
         except Exception as e:
             print(f"خطأ في معالجة النص العربي: {e}")
-            return text
-    
-    def safe_arabic_mixed(self, text):
-        """معالجة النصوص المختلطة (عربي + أرقام + أقواس + شرطات)
-        
-        تستخدم get_display فقط بدون arabic_reshaper للحفاظ على:
-        - الأقواس ( )
-        - الشرطة المائلة /
-        - الأرقام والتواريخ
-        - الرموز الخاصة
-        
-        arabic_reshaper يشوه هذه الرموز عند معالجة النصوص المختلطة،
-        لذلك نستخدم get_display فقط الذي يتعامل مع BiDi بدون إعادة تشكيل.
-        """
-        if not text:
-            return ""
-        
-        try:
-            bidi_text = get_display(text)
-            return bidi_text
-        except Exception as e:
-            print(f"خطأ في safe_arabic_mixed: {e}")
             return text
     
     def add_header_images(self):
@@ -138,12 +115,7 @@ class SickLeavePDF(FPDF):
         return f"PSL{leave_number}"
     
     def calculate_duration(self, admission_date_hijri, discharge_date_hijri, admission_date_gregorian, discharge_date_gregorian):
-        """حساب مدة الإجازة
-        
-        تبني النص العربي بالترتيب: عدد + يوم + (تاريخ إلى تاريخ)
-        مثال: 2 يوم (1447-03-28 إلى 1447-03-29)
-        ثم تعالج بـ safe_arabic_mixed للحفاظ على الأقواس
-        """
+        """حساب مدة الإجازة"""
         try:
             # تحويل التواريخ الميلادية لحساب المدة
             admission_parts = admission_date_gregorian.split('-')
@@ -155,33 +127,20 @@ class SickLeavePDF(FPDF):
                 
                 duration_days = (discharge_dt - admission_dt).days + 1
                 
-                # النص العربي: عدد + يوم + (تاريخ من إلى تاريخ)
-                duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+                # تكوين النص العربي
+                duration_ar = f"{duration_days} يوم"
                 
                 # تكوين النص الإنجليزي
                 day_word = "day" if duration_days == 1 else "days"
-                duration_en = f"{duration_days} {day_word} ({admission_date_gregorian} to {discharge_date_gregorian})"
-                
-                # معالجة النص المختلط بـ safe_arabic_mixed (بدون arabic_reshaper)
-                duration_ar = self.safe_arabic_mixed(duration_ar)
+                duration_en = f"{duration_days} {day_word}"
                 
                 return duration_ar, duration_en
             else:
-                duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
-                duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
-                
-                duration_ar = self.safe_arabic_mixed(duration_ar)
-                
-                return duration_ar, duration_en
+                return "1 يوم", "1 day"
                 
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
-            duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
-            
-            duration_ar = self.safe_arabic_mixed(duration_ar)
-            
-            return duration_ar, duration_en
+            return "1 يوم", "1 day"
     
     def add_table(self, data):
         """إضافة الجدول الرئيسي"""
@@ -211,8 +170,7 @@ class SickLeavePDF(FPDF):
             data.get('discharge_date_gregorian', '01-01-2025')
         )
         
-        # مدة الإجازة - calculate_duration يعالج النص بالفعل بـ safe_arabic_mixed
-        # لا نعيد معالجته مرة أخرى
+        # مدة الإجازة
         duration_ar, duration_en = self.calculate_duration(
             data.get('admission_date_hijri', '01-01-1446'),
             data.get('discharge_date_hijri', '01-01-1446'),
@@ -220,7 +178,7 @@ class SickLeavePDF(FPDF):
             data.get('discharge_date_gregorian', '01-01-2025')
         )
         
-        # معالجة النصوص العربية الخالصة
+        # معالجة النصوص العربية
         processed_data = {}
         for key, value in data.items():
             if key.endswith('_ar') and value:
@@ -228,9 +186,10 @@ class SickLeavePDF(FPDF):
             else:
                 processed_data[key] = value
         
+        # معالجة نص المدة العربية
+        duration_ar = self.process_arabic_text(duration_ar)
+        
         # محتوى الجدول (بعد التبديل)
-        # duration_ar تمت معالجته بالفعل في calculate_duration - لا نعيد معالجته
-        # رقم الهوية / الإقامة يستخدم safe_arabic_mixed للحفاظ على الشرطة المائلة
         table_data = [
             # [العمود الرابع (إنجليزي), العمود الثالث (إنجليزي/بيانات), العمود الثاني (عربي/بيانات), العمود الأول (عربي)]
             ['Leave ID', leave_id, '', self.process_arabic_text('رمز الإجازة')],
@@ -239,7 +198,7 @@ class SickLeavePDF(FPDF):
             ['Discharge Date', processed_data.get('discharge_date_gregorian', ''), processed_data.get('discharge_date_hijri', ''), self.process_arabic_text('تاريخ الخروج')],
             ['Issue Date', processed_data.get('issue_date_gregorian', ''), '', self.process_arabic_text('تاريخ إصدار التقرير')],
             ['Name', processed_data.get('patient_name_en', ''), processed_data.get('patient_name_ar', ''), self.process_arabic_text('الاسم')],
-            ['National ID / Iqama', processed_data.get('id_number', ''), '', self.safe_arabic_mixed('رقم الهوية / الإقامة')],
+            ['National ID / Iqama', processed_data.get('id_number', ''), '', self.process_arabic_text('رقم الهوية/الإقامة')],
             ['Nationality', processed_data.get('nationality_en', ''), processed_data.get('nationality_ar', ''), self.process_arabic_text('الجنسية')],
             ['Employer', processed_data.get('employer_en', ''), processed_data.get('employer_ar', ''), self.process_arabic_text('جهة العمل')],
             ["Practitioner Name", processed_data.get("doctor_name_en", ""), processed_data.get("doctor_name_ar", ""), self.process_arabic_text("اسم الممارس")],
