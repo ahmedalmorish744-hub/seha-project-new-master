@@ -674,14 +674,11 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 def main() -> None:
     # Debug: print token info
-    token_value = BOT_TOKEN
-    if token_value:
-        print(f"🔍 TELEGRAM_BOT_TOKEN env var: {os.environ.get("TELEGRAM_BOT_TOKEN", "NOT SET")}")
-        print(f"🔍 BOT_TOKEN first 10 chars: {token_value[:10]}...")
-        print(f"🔍 BOT_TOKEN length: {len(token_value)}")
-    else:
-        print("❌ BOT_TOKEN is EMPTY! TELEGRAM_BOT_TOKEN env var is not set!")
-        print(f"🔍 TELEGRAM_BOT_TOKEN env: {os.environ.get("TELEGRAM_BOT_TOKEN", "NOT SET")}")
+    _env_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    print('DEBUG: TELEGRAM_BOT_TOKEN env =', repr(_env_token[:15] + '...' if _env_token else 'NOT SET or EMPTY'))
+    print('DEBUG: BOT_TOKEN from config =', repr(BOT_TOKEN[:15] + '...' if BOT_TOKEN else 'EMPTY'))
+    if not BOT_TOKEN:
+        print('ERROR: BOT_TOKEN is empty! Set TELEGRAM_BOT_TOKEN env var in Railway!')
         return
     """الدالة الرئيسية لتشغيل البوت"""
     # إنشاء التطبيق
