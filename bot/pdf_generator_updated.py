@@ -43,13 +43,16 @@ class SickLeavePDF(FPDF):
             print(f"خطأ في تحميل الخطوط: {e}")
     
     def process_arabic_text(self, text):
-        """معالجة النص العربي لعرضه بشكل صحيح"""
+        """معالجة النص العربي لعرضه بشكل صحيح من اليمين لليسار"""
         if not text:
             return ""
         
         try:
+            # إضافة علامة RTL مخفية (U+200F) لفرض اتجاه النص من اليمين لليسار
+            # هذا يحل مشكلة اختفاء الأقواس وانسعكاس النص المختلط
+            text_with_rlm = '\u200F' + text
             # إعادة تشكيل النص العربي
-            reshaped_text = arabic_reshaper.reshape(text)
+            reshaped_text = arabic_reshaper.reshape(text_with_rlm)
             # تطبيق خوارزمية BiDi للعرض الصحيح
             bidi_text = get_display(reshaped_text)
             return bidi_text
@@ -120,8 +123,8 @@ class SickLeavePDF(FPDF):
                 
                 duration_days = (discharge_dt - admission_dt).days + 1
                 
-                # تكوين النص العربي - الأقواس معكوسة لأن BiDi يعكسها للعربي
-                duration_ar = f") {admission_date_hijri} إلى {discharge_date_hijri} ( يوم {duration_days}"
+                # تكوين النص العربي - من اليمين لليسار: عدد يوم (تاريخ إلى تاريخ)
+                duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
                 
                 # تكوين النص الإنجليزي
                 day_word = "day" if duration_days == 1 else "days"
@@ -129,13 +132,13 @@ class SickLeavePDF(FPDF):
                 
                 return duration_ar, duration_en
             else:
-                duration_ar = f") {admission_date_hijri} إلى {discharge_date_hijri} ( يوم 1"
+                duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
                 
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            duration_ar = f") {admission_date_hijri} إلى {discharge_date_hijri} ( يوم 1"
+            duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
     
