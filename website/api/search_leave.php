@@ -2,43 +2,36 @@
 require_once 'config.php';
 
 try {
-    $leave_number = $_GET['leave_number'] ?? '';
-    $id_number = $_GET['id_number'] ?? '';
+    $leave_number = isset($_GET['leave_number']) ? trim($_GET['leave_number']) : '';
+    $id_number = isset($_GET['id_number']) ? trim($_GET['id_number']) : '';
     
     if (empty($leave_number) && empty($id_number)) {
-        echo json_encode(['success' => false, 'message' => 'يرجى إدخال رمز الخدمة أو رقم الهوية']);
+        echo json_encode(['success' => false, 'message' => 'Please enter leave number or ID number']);
         exit();
     }
     
     if (!empty($leave_number) && !empty($id_number)) {
-        // Search by both
         $stmt = $db->prepare('SELECT * FROM leaves WHERE leave_number = :leave_number AND id_number = :id_number ORDER BY created_at DESC');
-        $stmt->bindValue(':leave_number', $leave_number, SQLITE3_TEXT);
-        $stmt->bindValue(':id_number', $id_number, SQLITE3_TEXT);
+        $stmt->bindParam(':leave_number', $leave_number);
+        $stmt->bindParam(':id_number', $id_number);
     } elseif (!empty($leave_number)) {
-        // Search by leave number only
         $stmt = $db->prepare('SELECT * FROM leaves WHERE leave_number = :leave_number ORDER BY created_at DESC');
-        $stmt->bindValue(':leave_number', $leave_number, SQLITE3_TEXT);
+        $stmt->bindParam(':leave_number', $leave_number);
     } else {
-        // Search by ID number only
         $stmt = $db->prepare('SELECT * FROM leaves WHERE id_number = :id_number ORDER BY created_at DESC');
-        $stmt->bindValue(':id_number', $id_number, SQLITE3_TEXT);
+        $stmt->bindParam(':id_number', $id_number);
     }
     
-    $result = $stmt->execute();
-    $leaves = [];
-    
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-        $leaves[] = $row;
-    }
+    $stmt->execute();
+    $leaves = $stmt->fetchAll();
     
     if (count($leaves) > 0) {
-        echo json_encode(['success' => true, 'data' => $leaves, 'count' => count($leaves)]);
+        echo json_encode(['success' => true, 'data' => $leaves, 'count' => count($leaves)], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(['success' => false, 'message' => 'لم يتم العثور على إجازات بهذه البيانات']);
+        echo json_encode(['success' => false, 'message' => 'No leaves found'], JSON_UNESCAPED_UNICODE);
     }
     
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'خطأ: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
 ?>
