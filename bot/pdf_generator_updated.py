@@ -11,6 +11,7 @@ from datetime import datetime
 from fpdf import FPDF
 from PIL import Image
 from config_updated import *
+from config_updated import QR_DISPLAY_URL
 import arabic_reshaper
 from bidi.algorithm import get_display
 
@@ -369,22 +370,23 @@ class SickLeavePDF(FPDF):
             line3_text = 'To check the report please visit Seha\'s offical website'
             self.cell(72, 6, line3_text, align='C')
 
-            # السطر الرابع (الرابط التشعبي)
+            # السطر الرابع (الرابط التشعبي) - النص القديم لكن الرابط يذهب لصفحة الاستعلام
             if self.times_available:
                 self.set_font('TimesNRMTPro-Regular', size=9)
             else:
                 self.set_font('Arial', '', size=9)
             self.set_text_color(0, 0, 255)  # لون أزرق للرابط
             self.set_xy(45, 326)
-            # إنشاء رابط تشعبي حقيقي
-            self.cell(72, 6, QR_URL, align='C', link=QR_URL)
+            # عرض الرابط القديم كنص، لكن عند الضغط يذهب لصفحة الاستعلام
+            display_url = QR_DISPLAY_URL if QR_DISPLAY_URL else QR_URL
+            self.cell(72, 6, display_url, align='C', link=QR_URL)
             
             # إضافة خط أزرق نحيف تحت الرابط مباشرة
             self.set_draw_color(0, 0, 255)  # لون أزرق للخط
             self.set_line_width(0.1)  # خط نحيف جداً
             # حساب موقع الخط تحت الرابط مباشرة
-            link_start_x = 45 + (72 - self.get_string_width(QR_URL)) / 2
-            link_end_x = link_start_x + self.get_string_width(QR_URL)
+            link_start_x = 45 + (72 - self.get_string_width(display_url)) / 2
+            link_end_x = link_start_x + self.get_string_width(display_url)
             self.line(link_start_x, 330, link_end_x, 330)  # رفع الخط للأعلى
             
             

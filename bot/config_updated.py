@@ -30,7 +30,8 @@ HOSPITAL_LOGO = f'{IMAGES_DIR}/شعارالمستشفى.png'
 HEALTH_INFO_CENTER_LOGO = f'{IMAGES_DIR}/شعارالمركزالوطنيللمعلوماتالصحية.jpg'
 
 # QR Code settings
-QR_URL = 'https://seha-project-new-master-production-7198.up.railway.app/'
+QR_URL = 'https://seha-project-new-master-production-7198.up.railway.app/inquiry'
+QR_DISPLAY_URL = 'https://www.seha.sa/#/inquiries/slenquiry'
 
 # PDF settings
 PDF_WIDTH = 297  # mm
