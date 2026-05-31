@@ -673,14 +673,27 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text("🖼️ يرجى أولاً إرسال البيانات المنسقة أو استخدام الطريقة التقليدية لإنشاء التقرير.")
 
 def main() -> None:
-    # Debug: print token info
-    _env_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-    print('DEBUG: TELEGRAM_BOT_TOKEN env =', repr(_env_token[:15] + '...' if _env_token else 'NOT SET or EMPTY'))
-    print('DEBUG: BOT_TOKEN from config =', repr(BOT_TOKEN[:15] + '...' if BOT_TOKEN else 'EMPTY'))
-    if not BOT_TOKEN:
-        print('ERROR: BOT_TOKEN is empty! Set TELEGRAM_BOT_TOKEN env var in Railway!')
-        return
     """الدالة الرئيسية لتشغيل البوت"""
+    # ===== تصحيح مهم: طباعة معلومات التوكن =====
+    _env_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+    print('=' * 60)
+    print('🔍 DEBUG: TELEGRAM_BOT_TOKEN env first 20 chars =', repr(_env_token[:20] + '...' if _env_token else 'NOT SET or EMPTY'))
+    print('🔍 DEBUG: BOT_TOKEN from config first 20 chars =', repr(BOT_TOKEN[:20] + '...' if BOT_TOKEN else 'EMPTY'))
+    print('=' * 60)
+    
+    # فحص التوكن القديم الملغى
+    OLD_REVOKED_TOKEN = '8146069383:AAGaiNYOM22xQVp2PJ6Zv9nZnbo1EThjlSY'
+    if _env_token == OLD_REVOKED_TOKEN or BOT_TOKEN == OLD_REVOKED_TOKEN:
+        print('🔴🔴🔴 خطأ حرج: التوكن القديم الملغى لا يزال مستخدماً! 🔴🔴🔴')
+        print('🔴 يجب الحصول على توكن جديد من BotFather وتحديثه في Railway Variables')
+        print('🔴 الخطوات: 1) @BotFather → /mybots → API Token → Revoke 2) نسخ التوكن الجديد 3) تحديث TELEGRAM_BOT_TOKEN في Railway')
+        return
+    
+    if not BOT_TOKEN:
+        print('❌ ERROR: BOT_TOKEN is empty! Set TELEGRAM_BOT_TOKEN env var in Railway!')
+        return
+    # ===== نهاية التصحيح =====
+    
     # إنشاء التطبيق
     application = Application.builder().token(BOT_TOKEN).build()
     
