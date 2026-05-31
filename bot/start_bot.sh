@@ -47,29 +47,14 @@ pip install -r requirements.txt
 # إنشاء المجلدات المطلوبة
 echo "📁 إنشاء المجلدات المطلوبة..."
 echo "📁 Creating required directories..."
-mkdir -p /home/ubuntu/output
-mkdir -p /home/ubuntu/fonts
-mkdir -p /home/ubuntu/upload
+mkdir -p /app/output
 
-# نسخ الخطوط والصور
-echo "📋 نسخ الخطوط والصور..."
-echo "📋 Copying fonts and images..."
-cp -r fonts/* /home/ubuntu/fonts/ 2>/dev/null || echo "⚠️ لم يتم العثور على مجلد الخطوط"
-cp -r *.jpg *.png /home/ubuntu/upload/ 2>/dev/null || echo "⚠️ لم يتم العثور على الصور"
-
-# التحقق من ملف الإعدادات
-if [ ! -f "config.py" ]; then
-    echo "❌ ملف config.py مفقود!"
-    echo "❌ config.py file is missing!"
-    exit 1
-fi
-
-# التحقق من رمز البوت
-if grep -q "YOUR_BOT_TOKEN_HERE" config.py; then
-    echo "⚠️ يرجى تحديث رمز البوت في ملف config.py"
-    echo "⚠️ Please update the bot token in config.py"
-    echo "📝 افتح ملف config.py وضع رمز البوت الصحيح"
-    echo "📝 Open config.py and set the correct bot token"
+# التحقق من متغيرات البيئة المطلوبة
+if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
+    echo "❌ متغير البيئة TELEGRAM_BOT_TOKEN غير محدد!"
+    echo "❌ TELEGRAM_BOT_TOKEN environment variable is not set!"
+    echo "📝 قم بتعيينه: export TELEGRAM_BOT_TOKEN=your_token_here"
+    echo "📝 Set it: export TELEGRAM_BOT_TOKEN=your_token_here"
     exit 1
 fi
 
@@ -80,6 +65,6 @@ echo "🤖 تشغيل البوت..."
 echo "🤖 Starting the bot..."
 echo ""
 
-# تشغيل البوت
-python3 bot.py
+# تشغيل البوت المحدث
+python3 bot_updated.py
 
