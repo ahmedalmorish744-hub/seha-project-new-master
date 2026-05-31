@@ -42,21 +42,16 @@ class SickLeavePDF(FPDF):
         except Exception as e:
             print(f"خطأ في تحميل الخطوط: {e}")
     
-    def process_arabic_text(self, text, force_rtl=True):
+    def process_arabic_text(self, text):
         """معالجة النص العربي لعرضه بشكل صحيح من اليمين لليسار"""
         if not text:
             return ""
         
         try:
-            # إضافة علامة RTL مخفية (U+200F) لفرض اتجاه النص من اليمين لليسار
-            text_with_rlm = '\u200F' + text
             # إعادة تشكيل النص العربي
-            reshaped_text = arabic_reshaper.reshape(text_with_rlm)
-            # تطبيق خوارزمية BiDi للعرض الصحيح مع فرض اتجاه RTL
-            if force_rtl:
-                bidi_text = get_display(reshaped_text, base_dir='R')
-            else:
-                bidi_text = get_display(reshaped_text)
+            reshaped_text = arabic_reshaper.reshape(text)
+            # تطبيق خوارزمية BiDi للعرض الصحيح
+            bidi_text = get_display(reshaped_text)
             return bidi_text
         except Exception as e:
             print(f"خطأ في معالجة النص العربي: {e}")
@@ -114,10 +109,6 @@ class SickLeavePDF(FPDF):
     
     def calculate_duration(self, admission_date_hijri, discharge_date_hijri, admission_date_gregorian, discharge_date_gregorian):
         """حساب مدة الإجازة"""
-        # أحرف التحكم BiDi - LRE/PDF لإبقاء التواريخ باتجاه LTR
-        LRE = '\u202A'  # Left-to-Right Embedding
-        PDF_C = '\u202C'  # Pop Directional Formatting
-        
         try:
             # تحويل التواريخ الميلادية لحساب المدة
             admission_parts = admission_date_gregorian.split('-')
@@ -129,10 +120,7 @@ class SickLeavePDF(FPDF):
                 
                 duration_days = (discharge_dt - admission_dt).days + 1
                 
-                # تكوين النص العربي - الترتيب المنطقي: (تاريخ إلى تاريخ) يوم عدد
-                # عند القراءة من اليمين لليسار: التاريخ أولاً ثم يوم ثم العدد في النهاية
-                # استخدام LRE/PDF حول التواريخ لمنع انعكاس الأرقام
-                duration_ar = f"({LRE}{admission_date_hijri}{PDF_C} إلى {LRE}{discharge_date_hijri}{PDF_C}) يوم {duration_days}"
+                duration_ar = f"{duration_days} يوم {admission_date_hijri} الى {discharge_date_hijri}"
                 
                 # تكوين النص الإنجليزي
                 day_word = "day" if duration_days == 1 else "days"
@@ -140,13 +128,13 @@ class SickLeavePDF(FPDF):
                 
                 return duration_ar, duration_en
             else:
-                duration_ar = f"({LRE}{admission_date_hijri}{PDF_C} إلى {LRE}{discharge_date_hijri}{PDF_C}) يوم 1"
+                duration_ar = f"1 يوم {admission_date_hijri} الى {discharge_date_hijri}"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
                 
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            duration_ar = f"({LRE}{admission_date_hijri}{PDF_C} إلى {LRE}{discharge_date_hijri}{PDF_C}) يوم 1"
+            duration_ar = f"1 يوم {admission_date_hijri} الى {discharge_date_hijri}"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
     
