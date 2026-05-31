@@ -20,6 +20,12 @@ from bidi.algorithm import get_display
 LRE = '\u202A'  # Left-to-Right Embedding
 PDF_C = '\u202C'  # Pop Directional Formatting
 
+# رسالة تحقق من إصدار الكود
+print("=" * 50)
+print("PDF Generator v3 - Mixed Text Fix Active")
+print("Features: LRE/PDF bidi controls, process_mixed_text()")
+print("=" * 50)
+
 class SickLeavePDF(FPDF):
     def __init__(self):
         super().__init__(orientation='P', unit='mm', format=(PDF_WIDTH, PDF_HEIGHT))
