@@ -100,6 +100,7 @@ def send_leave_data_to_api(user_data):
         }
         
         logger.info(f"إرسال البيانات إلى API: {API_FULL_URL}")
+        logger.info(f"API Key: {BOT_API_KEY[:10]}...")
         logger.info(f"البيانات المرسلة: {json.dumps(api_data, ensure_ascii=False)}")
         
         response = requests.post(
