@@ -25,20 +25,29 @@ class SickLeavePDF(FPDF):
 
     def load_fonts(self):
         """تحميل الخطوط المطلوبة"""
+        # خطوط عربية - أساسية ولا يمكن الاستغناء عنها
+        if not os.path.exists(NOTO_SANS_ARABIC_BOLD):
+            raise FileNotFoundError(f"ملف الخط العربي غير موجود: {NOTO_SANS_ARABIC_BOLD}")
+        if not os.path.exists(NOTO_SANS_ARABIC_REGULAR):
+            raise FileNotFoundError(f"ملف الخط العربي غير موجود: {NOTO_SANS_ARABIC_REGULAR}")
+        
+        self.add_font('NotoSansArabic-Bold', '', NOTO_SANS_ARABIC_BOLD)
+        self.add_font('NotoSansArabic-Regular', '', NOTO_SANS_ARABIC_REGULAR)
+        
+        # خطوط إنجليزية - اختيارية
+        self.times_available = False
         try:
-            # خطوط عربية
-            self.add_font('NotoSansArabic-Bold', '', NOTO_SANS_ARABIC_BOLD)
-            self.add_font('NotoSansArabic-Regular', '', NOTO_SANS_ARABIC_REGULAR)
-            # خطوط إنجليزية
-            try:
+            if os.path.exists(TIMES_NR_MT_BOLD) and os.path.exists(TIMES_NR_MT_REGULAR):
                 self.add_font('TimesNRMTPro-Bold', '', TIMES_NR_MT_BOLD)
                 self.add_font('TimesNRMTPro-Regular', '', TIMES_NR_MT_REGULAR)
                 self.times_available = True
-            except:
-                self.times_available = False
-                print("استخدام الخطوط المدمجة للنصوص الإنجليزية")
+            else:
+                print(f"⚠️ ملفات الخط الإنجليزي غير موجودة: {TIMES_NR_MT_BOLD}")
         except Exception as e:
-            print(f"خطأ في تحميل الخطوط: {e}")
+            print(f"⚠️ خطأ في تحميل الخط الإنجليزي: {e}")
+        
+        if not self.times_available:
+            print("استخدام الخطوط المدمجة للنصوص الإنجليزية")
 
     def process_arabic_text(self, text):
         """معالجة النص العربي النقي (بدون أرقام/رموز مختلطة)"""

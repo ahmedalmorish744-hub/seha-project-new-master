@@ -112,6 +112,9 @@ async def handle_formatted_message(update: Update, context: ContextTypes.DEFAULT
     user_id = update.effective_user.id
     
     try:
+        # تسجيل البيانات المستلمة للتشخيص
+        logger.info(f"البيانات المستلمة للمعالجة: {parsed_data}")
+        
         # إرسال رسالة تأكيد
         await update.message.reply_text("🔄 جاري معالجة البيانات وتحويل التواريخ...")
         
@@ -182,10 +185,18 @@ async def handle_formatted_message(update: Update, context: ContextTypes.DEFAULT
             await update.message.reply_text("❌ حدث خطأ في توليد التقرير. يرجى المحاولة مرة أخرى.")
             
     except Exception as e:
-        logger.error(f"خطأ في معالجة الرسالة المنسقة: {e}")
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"خطأ في معالجة الرسالة المنسقة: {e}\n{error_details}")
+        
+        # إرسال تفاصيل الخطأ الفعلية للمستخدم لتسهيل التشخيص
+        error_type = type(e).__name__
+        error_msg = str(e)[:200]  # تحديد طول رسالة الخطأ
         await update.message.reply_text(
-            "❌ حدث خطأ في معالجة البيانات. يرجى التحقق من تنسيق الرسالة والمحاولة مرة أخرى.\n\n"
-            "تأكد من أن الرسالة تحتوي على الحقول المطلوبة بالتنسيق الصحيح."
+            f"❌ حدث خطأ في معالجة البيانات\n\n"
+            f"🔍 نوع الخطأ: {error_type}\n"
+            f"📝 تفاصيل: {error_msg}\n\n"
+            f"يرجى التحقق من تنسيق الرسالة والمحاولة مرة أخرى."
         )
 
 async def handle_new_report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
