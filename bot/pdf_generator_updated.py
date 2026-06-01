@@ -217,13 +217,9 @@ class SickLeavePDF(FPDF):
                 self.rect(current_x, current_y, actual_width, row_height, 'D' if not fill else 'DF')
                 self.set_cell_font_and_color(row_idx, col_idx, cell_text)
                 if cell_text:
-                    if row_idx == 1 and col_idx == 2:
-                        # خلية المدة العربية - عرض بخطين مختلفين
-                        self.render_mixed_font_cell(current_x, current_y, actual_width, row_height, cell_text)
-                    else:
-                        self.set_xy(current_x, current_y)
-                        align = self.get_cell_alignment(row_idx, col_idx)
-                        self.cell(actual_width, row_height, cell_text, align=align)
+                    self.set_xy(current_x, current_y)
+                    align = self.get_cell_alignment(row_idx, col_idx)
+                    self.cell(actual_width, row_height, cell_text, align=align)
                 current_x += col_width
             current_y += row_height
         self.set_draw_color(217, 217, 217)
