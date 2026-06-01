@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Enhanced PDF Generator for Seha Sick Leave Reports with Arabic Text Support - Updated Version
-وحدة توليد تقارير الإجازة المرضية بصيغة PDF - النسخة المحدثة
+وحدة توليد تقارير الإجازة المرضية بصيغة PDF - النسخة المحدثة والمصححة
 """
 
 import os
@@ -53,41 +53,28 @@ class SickLeavePDF(FPDF):
             return text
 
     # ═══════════════════════════════════════════════════════════════
-    # ✅ FIX #1: NEW FUNCTION - safe_arabic_mixed
-    # يحافظ على الرموز والأرقام والتواريخ في ترتيبها الأصلي
+    # ✅ FIX: دالة safe_arabic_mixed - الإصدار المصحح نهائياً
+    # تحافظ على الأقواس () والشرطات / و - والأرقام في أماكنها الصحيحة
     # ═══════════════════════════════════════════════════════════════
     def safe_arabic_mixed(self, text):
         """
-        معالجة آمنة للنص المختلط (عربي + أرقام + رموز).
-        تقوم بـ:
-        1. تقسيم النص إلى قطع: عربية / غير عربية
-        2. معالجة القطع العربية فقط بـ reshape + get_display
-        3. الحفاظ على الأرقام والتواريخ والأقواس والشرطات في مكانها
-        4. عكس ترتيب القطع النهائي ليتوافق مع عرض RTL في PDF
+        معالجة آمنة للنص المختلط (عربي + أرقام + رموز مثل: 2 يوم (1447-03-28 إلى 1447-03-29)).
+        تستخدم arabic_reshaper + python-bidi لمعالجة النص كاملاً دون تقطيع أو عكس يدوي.
         """
         if not text:
             return ""
         try:
-            # ✅ التصحيح: استخدام \u0600-\u06FF لمطابقة أحرف اليونيكود العربية فعلياً
-            tokens = re.findall(r'[\u0600-\u06FF]+|[^\u0600-\u06FF]+', text)
-
-            processed_tokens = []
-            for token in tokens:
-                # ✅ التصحيح: نفس التعديل في شرط المطابقة
-                if re.match(r'[\u0600-\u06FF]', token):
-                    # قطعة عربية → reshape + BiDi
-                    reshaped = arabic_reshaper.reshape(token)
-                    bidi = get_display(reshaped)
-                    processed_tokens.append(bidi)
-                else:
-                    # قطعة غير عربية (أرقام، رموز، إنجليزي) → احتفظ كما هي
-                    processed_tokens.append(token)
-
-            # عكس ترتيب القطع لعرضها من اليمين لليسار في PDF
-            result = "".join(reversed(processed_tokens))
-            return result
+            # ✅ الخطوة 1: إعادة تشكيل الأحرف العربية للاتصال الصحيح (ربط الحروف)
+            reshaped = arabic_reshaper.reshape(text)
+            
+            # ✅ الخطوة 2: تطبيق خوارزمية Unicode BiDi للترتيب البصري الصحيح
+            # هذه الدالة تحافظ على مواضع الأرقام، الأقواس، الشرطات، والمسافات
+            bidi_text = get_display(reshaped)
+            
+            return bidi_text
         except Exception as e:
-            print(f"خطأ في safe_arabic_mixed: {e}")
+            print(f"⚠️ خطأ في safe_arabic_mixed: {e}")
+            # في حال حدوث خطأ، نرجع النص الأصلي لضمان عدم ضياع البيانات
             return text
 
     def add_header_images(self):
@@ -137,7 +124,7 @@ class SickLeavePDF(FPDF):
                 discharge_dt = datetime(int(discharge_parts[2]), int(discharge_parts[1]), int(discharge_parts[0]))
                 duration_days = (discharge_dt - admission_dt).days + 1
 
-                # ✅ FIX #2: استخدام safe_arabic_mixed للمدة
+                # ✅ بناء نص المدة بالترتيب الصحيح: عدد الأيام أولاً، ثم التواريخ بين قوسين
                 duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
 
                 day_word = "day" if duration_days == 1 else "days"
@@ -188,10 +175,8 @@ class SickLeavePDF(FPDF):
             else:
                 processed_data[key] = value
 
-        # ✅ FIX #3: استخدام safe_arabic_mixed للنصوص المختلطة
+        # ✅ استخدام safe_arabic_mixed للنصوص المختلطة (المدة، رقم الهوية)
         duration_ar_processed = self.safe_arabic_mixed(duration_ar)
-
-        # ✅ FIX #4: استخدام safe_arabic_mixed لخلية رقم الهوية/الإقامة
         id_label_processed = self.safe_arabic_mixed('رقم الهوية / الإقامة')
 
         table_data = [
@@ -425,7 +410,34 @@ def generate_sick_leave_pdf(data, user_id):
         raise e
 
 
+# ═══════════════════════════════════════════════════════════════
+# ✅ قسم الاختبار للتحقق من إصلاح الأقواس والشرطات
+# ═══════════════════════════════════════════════════════════════
 if __name__ == "__main__":
+    pdf = SickLeavePDF()
+    
+    print("🔍 اختبار دالة safe_arabic_mixed بعد الإصلاح:\n")
+    
+    # اختبار 1: مدة الإجازة (المشكلة الرئيسية)
+    test1 = "2 يوم (1447-03-28 إلى 1447-03-29)"
+    result1 = pdf.safe_arabic_mixed(test1)
+    print(f"📝 المدخل:  {test1}")
+    print(f"✅ المخرج: {result1}\n")
+    
+    # اختبار 2: رقم الهوية مع الشرطة المائلة
+    test2 = "رقم الهوية / الإقامة"
+    result2 = pdf.safe_arabic_mixed(test2)
+    print(f"📝 المدخل:  {test2}")
+    print(f"✅ المخرج: {result2}\n")
+    
+    # اختبار 3: نص مختلط مع رموز متعددة
+    test3 = "التقرير رقم (123/أ) صادر بتاريخ 2025-01-15"
+    result3 = pdf.safe_arabic_mixed(test3)
+    print(f"📝 المدخل:  {test3}")
+    print(f"✅ المخرج: {result3}\n")
+    
+    # اختبار 4: توليد تقرير تجريبي
+    print("🧪 جاري إنشاء تقرير تجريبي...\n")
     test_data = {
         'patient_name_ar': 'أحمد محمد السعيد',
         'patient_name_en': 'AHMED Mohammed Alsaeed',
@@ -440,12 +452,18 @@ if __name__ == "__main__":
         'position_en': 'General',
         'admission_date_gregorian': '12-05-2025',
         'admission_date_hijri': '14-11-1446',
-        'discharge_date_gregorian': '12-05-2025',
-        'discharge_date_hijri': '14-11-1446',
+        'discharge_date_gregorian': '14-05-2025',
+        'discharge_date_hijri': '16-11-1446',
         'issue_date_gregorian': '05-07-2025',
         'hospital_name_ar': 'مجمع عائلتي الطبي',
         'hospital_name_en': 'My Family Medical Center',
         'time': '6:23 AM'
     }
-    pdf_path = generate_sick_leave_pdf(test_data, 'test')
-    print(f"تم إنشاء ملف PDF: {pdf_path}")
+    try:
+        pdf_path = generate_sick_leave_pdf(test_data, 'test')
+        print(f"✅ تم إنشاء ملف PDF بنجاح: {pdf_path}")
+        print(f"📌 افتح الملف وتأكد من ظهور: ")
+        print(f"   • خلية المدة: 3 يوم (14-11-1446 إلى 16-11-1446)")
+        print(f"   • خلية الهوية: رقم الهوية / الإقامة")
+    except Exception as e:
+        print(f"❌ خطأ أثناء إنشاء التقرير: {e}")
