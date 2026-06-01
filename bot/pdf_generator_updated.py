@@ -53,6 +53,29 @@ class SickLeavePDF(FPDF):
             print(f"خطأ في معالجة النص العربي: {e}")
             return text
 
+    def safe_arabic_mixed(self, text):
+        """
+        معالجة آمنة للنص المختلط (عربي + أرقام + رموز).
+        تحافظ على ترتيب النص كما هو، وتقوم فقط بتشكيل المقاطع العربية.
+        """
+        if not text:
+            return ""
+        try:
+            tokens = re.findall(r'[\u0600-\u06FF]+|[^\u0600-\u06FF]+', text)
+
+            processed_tokens = []
+            for token in tokens:
+                if re.search(r'[\u0600-\u06FF]', token):
+                    shaped = arabic_reshaper.reshape(token)
+                    processed_tokens.append(get_display(shaped))
+                else:
+                    processed_tokens.append(token)
+
+            return "".join(processed_tokens)
+        except Exception as e:
+            print(f"خطأ في safe_arabic_mixed: {e}")
+            return text
+
     def add_header_images(self):
         """إضافة الصور والشعارات في الرأس"""
         try:
@@ -100,18 +123,20 @@ class SickLeavePDF(FPDF):
                 discharge_dt = datetime(int(discharge_parts[2]), int(discharge_parts[1]), int(discharge_parts[0]))
                 duration_days = (discharge_dt - admission_dt).days + 1
 
+                duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+
                 day_word = "day" if duration_days == 1 else "days"
                 duration_en = f"{duration_days} {day_word} ({admission_date_gregorian} to {discharge_date_gregorian})"
-
-                # ═══════════════════════════════════════════════════════════════
-                # ✅ FIX: إرجاع المكونات منفصلة بدلاً من نص مجمع
-                # ═══════════════════════════════════════════════════════════════
-                return duration_days, duration_en, admission_date_hijri, discharge_date_hijri
+                return duration_ar, duration_en
             else:
-                return 1, f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})", admission_date_hijri, discharge_date_hijri
+                duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+                duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
+                return duration_ar, duration_en
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            return 1, f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})", admission_date_hijri, discharge_date_hijri
+            duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+            duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
+            return duration_ar, duration_en
 
     def add_table(self, data):
         """إضافة الجدول الرئيسي"""
@@ -133,10 +158,7 @@ class SickLeavePDF(FPDF):
             data.get('discharge_date_gregorian', '01-01-2025')
         )
 
-        # ═══════════════════════════════════════════════════════════════
-        # ✅ FIX: استلام المكونات المنفصلة وتجميع النص العربي يدوياً
-        # ═══════════════════════════════════════════════════════════════
-        duration_days, duration_en, admission_hijri, discharge_hijri = self.calculate_duration(
+        duration_ar, duration_en = self.calculate_duration(
             data.get('admission_date_hijri', '01-01-1446'),
             data.get('discharge_date_hijri', '01-01-1446'),
             data.get('admission_date_gregorian', '01-01-2025'),
@@ -151,23 +173,11 @@ class SickLeavePDF(FPDF):
             else:
                 processed_data[key] = value
 
-        # ═══════════════════════════════════════════════════════════════
-        # ✅ FIX #1: تجميع نص مدة الإجازة يدوياً بالترتيب الصحيح
-        # المشكلة: safe_arabic_mixed كانت تعكس ترتيب التوكنات
-        # الحل: معالجة الكلمات العربية فقط وتجميع النص بالترتيب LTR
-        # ═══════════════════════════════════════════════════════════════
-        day_word_ar = self.process_arabic_text("يوم")
-        to_word_ar = self.process_arabic_text("إلى")
-        duration_ar_processed = f"{duration_days} {day_word_ar} ({admission_hijri} {to_word_ar} {discharge_hijri})"
+        # استخدام safe_arabic_mixed للنصوص المختلطة
+        duration_ar_processed = self.safe_arabic_mixed(duration_ar)
 
-        # ═══════════════════════════════════════════════════════════════
-        # ✅ FIX #2: تجميع نص رقم الهوية / الإقامة يدوياً
-        # المشكلة: safe_arabic_mixed كانت تعكس الترتيب وتفقد الشرطة
-        # الحل: معالجة كل جزء عربي على حدة وإضافة الشرطة يدوياً
-        # ═══════════════════════════════════════════════════════════════
-        id_label_part1 = self.process_arabic_text("رقم الهوية")
-        id_label_part2 = self.process_arabic_text("الإقامة")
-        id_label_processed = f"{id_label_part1} / {id_label_part2}"
+        # استخدام safe_arabic_mixed لخلية رقم الهوية/الإقامة
+        id_label_processed = self.safe_arabic_mixed('رقم الهوية / الإقامة')
 
         table_data = [
             ['Leave ID', leave_id, '', self.process_arabic_text('رمز الإجازة')],
@@ -317,7 +327,7 @@ class SickLeavePDF(FPDF):
                 self.set_font('Arial', 'B', size=9)
             self.set_text_color(0, 0, 0)
             self.set_xy(45, 320)
-            line3_text = "To check the report please visit Seha\'s offical website"
+            line3_text = "To check the report please visit Seha's offical website"
             self.cell(72, 6, line3_text, align='C')
 
             if self.times_available:
