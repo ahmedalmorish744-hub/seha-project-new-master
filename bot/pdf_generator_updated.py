@@ -122,22 +122,40 @@ class SickLeavePDF(FPDF):
                 # ✅ استخدام علامات LRM (U+200E) حول التواريخ الهجرية للحفاظ على تنسيق DD-MM-YYYY
                 # بدون هذه العلامات، خوارزمية BiDi تعكس ترتيب الأرقام
                 lrm = '\u200e'
-                duration_ar = f"{duration_days} يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
+                formatted_admission_hijri = self.format_hijri_date(admission_date_hijri)
+                formatted_discharge_hijri = self.format_hijri_date(discharge_date_hijri)
+                duration_ar = f"{duration_days} يوم ({lrm}{formatted_admission_hijri}{lrm} إلى {lrm}{formatted_discharge_hijri}{lrm})"
 
                 day_word = "day" if duration_days == 1 else "days"
                 duration_en = f"{duration_days} {day_word} ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
             else:
                 lrm = '\u200e'
-                duration_ar = f"1 يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
+                formatted_admission_hijri = self.format_hijri_date(admission_date_hijri)
+                formatted_discharge_hijri = self.format_hijri_date(discharge_date_hijri)
+                duration_ar = f"1 يوم ({lrm}{formatted_admission_hijri}{lrm} إلى {lrm}{formatted_discharge_hijri}{lrm})"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
             lrm = '\u200e'
-            duration_ar = f"1 يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
+            formatted_admission_hijri = self.format_hijri_date(admission_date_hijri)
+            formatted_discharge_hijri = self.format_hijri_date(discharge_date_hijri)
+            duration_ar = f"1 يوم ({lrm}{formatted_admission_hijri}{lrm} إلى {lrm}{formatted_discharge_hijri}{lrm})"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
+
+    def format_hijri_date(self, date_str):
+        """تحويل تنسيق التاريخ الهجري من YYYY-MM-DD إلى DD-MM-YYYY"""
+        if not date_str:
+            return date_str
+        try:
+            parts = date_str.split('-')
+            if len(parts) == 3:
+                return f"{parts[2]}-{parts[1]}-{parts[0]}"
+            return date_str
+        except Exception:
+            return date_str
 
     def add_table(self, data):
         """إضافة الجدول الرئيسي"""
@@ -182,19 +200,19 @@ class SickLeavePDF(FPDF):
             ['Leave ID', leave_id, '', self.process_arabic_text('رمز الإجازة')],
             ['Leave Duration', duration_en, duration_ar_processed, self.process_arabic_text('مدة الإجازة')],
             ['Admission Date', processed_data.get('admission_date_gregorian', ''),
-             processed_data.get('admission_date_hijri', ''), self.process_arabic_text('تاريخ الدخول')],
+             self.format_hijri_date(processed_data.get('admission_date_hijri', '')), self.process_arabic_text('تاريخ الدخول')],
             ['Discharge Date', processed_data.get('discharge_date_gregorian', ''),
-             processed_data.get('discharge_date_hijri', ''), self.process_arabic_text('تاريخ الخروج')],
+             self.format_hijri_date(processed_data.get('discharge_date_hijri', '')), self.process_arabic_text('تاريخ الخروج')],
             ['Issue Date', processed_data.get('issue_date_gregorian', ''), '',
              self.process_arabic_text('تاريخ إصدار التقرير')],
-            ['Name', processed_data.get('patient_name_en', ''), processed_data.get('patient_name_ar', ''),
+            ['Name', processed_data.get('patient_name_en', '').upper(), processed_data.get('patient_name_ar', ''),
              self.process_arabic_text('الاسم')],
             ['National ID / Iqama', processed_data.get('id_number', ''), '', id_label_processed],
             ['Nationality', processed_data.get('nationality_en', ''), processed_data.get('nationality_ar', ''),
              self.process_arabic_text('الجنسية')],
             ['Employer', processed_data.get('employer_en', ''), processed_data.get('employer_ar', ''),
              self.process_arabic_text('جهة العمل')],
-            ["Practitioner Name", processed_data.get("doctor_name_en", ""),
+            ["Practitioner Name", processed_data.get("doctor_name_en", "").upper(),
              processed_data.get("doctor_name_ar", ""), self.process_arabic_text("اسم الممارس")],
             ['Position', processed_data.get('position_en', ''), processed_data.get('position_ar', ''),
              self.process_arabic_text('المسمى الوظيفي')],
@@ -250,7 +268,7 @@ class SickLeavePDF(FPDF):
                 if col_idx == 0:
                     self.set_font('Times', 'B', size=13)
                 else:
-                    self.set_font('NotoSansArabic-Bold', size=13)
+                    self.set_font('NotoSansArabic-Regular', size=13)
                 self.set_text_color(*white_color)
             else:
                 if col_idx == 1:
@@ -262,17 +280,14 @@ class SickLeavePDF(FPDF):
             self.set_font('Times', 'B', size=13)
             self.set_text_color(*blue_color)
         elif col_idx == 1:
-            if row_idx == 5:
-                font_size = 11
-            else:
-                font_size = 11 if row_idx in [7, 9] else 13
+            font_size = 13
             self.set_font('Times', '', size=font_size)
             self.set_text_color(*dark_blue)
         elif col_idx == 2:
             self.set_font('NotoSansArabic-Regular', size=13)
             self.set_text_color(*dark_blue)
         elif col_idx == 3:
-            self.set_font('NotoSansArabic-Bold', size=13)
+            self.set_font('NotoSansArabic-Regular', size=13)
             self.set_text_color(*blue_color)
 
     def get_cell_alignment(self, row_idx, col_idx):
@@ -317,7 +332,7 @@ class SickLeavePDF(FPDF):
             self.set_font('Times', '', size=9)
             self.set_text_color(0, 0, 255)
             self.set_xy(45, 326)
-            display_url = QR_DISPLAY_URL if QR_DISPLAY_URL else QR_URL
+            display_url = (QR_DISPLAY_URL if QR_DISPLAY_URL else QR_URL).replace('https://', '').replace('http://', '')
             self.cell(72, 6, display_url, align='C', link=QR_URL)
 
             self.set_draw_color(0, 0, 255)
