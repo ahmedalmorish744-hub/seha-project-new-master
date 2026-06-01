@@ -217,9 +217,13 @@ class SickLeavePDF(FPDF):
                 self.rect(current_x, current_y, actual_width, row_height, 'D' if not fill else 'DF')
                 self.set_cell_font_and_color(row_idx, col_idx, cell_text)
                 if cell_text:
-                    self.set_xy(current_x, current_y)
-                    align = self.get_cell_alignment(row_idx, col_idx)
-                    self.cell(actual_width, row_height, cell_text, align=align)
+                    if row_idx == 1 and col_idx == 2:
+                        # خلية المدة العربية - عرض بخطين مختلفين
+                        self.render_mixed_font_cell(current_x, current_y, actual_width, row_height, cell_text)
+                    else:
+                        self.set_xy(current_x, current_y)
+                        align = self.get_cell_alignment(row_idx, col_idx)
+                        self.cell(actual_width, row_height, cell_text, align=align)
                 current_x += col_width
             current_y += row_height
         self.set_draw_color(217, 217, 217)
@@ -245,6 +249,60 @@ class SickLeavePDF(FPDF):
                 return True
         return False
 
+    def is_arabic_char(self, char):
+        """فحص هل الحرف عربي"""
+        return ('\u0600' <= char <= '\u06FF' or
+                '\u0750' <= char <= '\u077F' or
+                '\uFB50' <= char <= '\uFDFF' or
+                '\uFE70' <= char <= '\uFEFF')
+
+    def split_mixed_text(self, text):
+        """تقسيم النص إلى أجزاء عربية وأجزاء أرقام/رموز"""
+        if not text:
+            return []
+        segments = []
+        current = ""
+        current_is_arabic = None
+        for char in text:
+            is_ar = self.is_arabic_char(char)
+            if current_is_arabic is None:
+                current_is_arabic = is_ar
+                current = char
+            elif is_ar == current_is_arabic:
+                current += char
+            else:
+                segments.append((current_is_arabic, current))
+                current_is_arabic = is_ar
+                current = char
+        if current:
+            segments.append((current_is_arabic, current))
+        return segments
+
+    def render_mixed_font_cell(self, x, y, width, height, text):
+        """عرض خلية بخطين: NotoSansArabic للعربي و Times للأرقام والرموز"""
+        if not text:
+            return
+        segments = self.split_mixed_text(text)
+        # حساب العرض الكلي للتوسيط
+        total_width = 0
+        for is_arabic, segment in segments:
+            if is_arabic:
+                self.set_font('NotoSansArabic-Regular', size=13)
+            else:
+                self.set_font('Times', '', size=13)
+            total_width += self.get_string_width(segment)
+        # توسيط أفقي
+        start_x = x + (width - total_width) / 2
+        self.set_xy(start_x, y)
+        # عرض كل جزء بالخط المناسب
+        for is_arabic, segment in segments:
+            if is_arabic:
+                self.set_font('NotoSansArabic-Regular', size=13)
+            else:
+                self.set_font('Times', '', size=13)
+            seg_width = self.get_string_width(segment)
+            self.cell(seg_width, height, segment, align='L')
+
     def set_cell_font_and_color(self, row_idx, col_idx, text):
         blue_color = (54, 111, 181)
         dark_blue = (44, 62, 119)
@@ -261,8 +319,8 @@ class SickLeavePDF(FPDF):
                 if col_idx == 1:
                     self.set_font('Times', '', size=13)
                 else:
-                    # مدة الإجازة العربية - نص مختلط يحتوي حروف عربية
-                    self.set_font('NotoSansArabic-Bold', size=13)
+                    # خلية رقم 2 صف 2 - مدة الإجازة العربية بدون غامق
+                    self.set_font('NotoSansArabic-Regular', size=13)
                 self.set_text_color(*white_color)
         elif col_idx == 0:
             self.set_font('Times', 'B', size=13)
@@ -322,7 +380,7 @@ class SickLeavePDF(FPDF):
             line3_text = "To check the report please visit Seha's offical website"
             self.cell(72, 6, line3_text, align='C')
 
-            self.set_font('Times', '', size=9)
+            self.set_font('Times', 'B', size=10)
             self.set_text_color(0, 0, 255)
             self.set_xy(45, 326)
             display_url = (QR_DISPLAY_URL if QR_DISPLAY_URL else QR_URL).replace('https://', '').replace('http://', '')
