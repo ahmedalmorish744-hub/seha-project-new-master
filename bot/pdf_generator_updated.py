@@ -119,19 +119,23 @@ class SickLeavePDF(FPDF):
                 discharge_dt = datetime(int(discharge_parts[2]), int(discharge_parts[1]), int(discharge_parts[0]))
                 duration_days = (discharge_dt - admission_dt).days + 1
 
-                # ✅ بناء نص المدة بالترتيب الصحيح: عدد الأيام أولاً، ثم التواريخ بين قوسين
-                duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+                # ✅ استخدام علامات LRM (U+200E) حول التواريخ الهجرية للحفاظ على تنسيق DD-MM-YYYY
+                # بدون هذه العلامات، خوارزمية BiDi تعكس ترتيب الأرقام
+                lrm = '\u200e'
+                duration_ar = f"{duration_days} يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
 
                 day_word = "day" if duration_days == 1 else "days"
                 duration_en = f"{duration_days} {day_word} ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
             else:
-                duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+                lrm = '\u200e'
+                duration_ar = f"1 يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+            lrm = '\u200e'
+            duration_ar = f"1 يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
 
