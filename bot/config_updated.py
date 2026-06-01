@@ -16,11 +16,11 @@ FONTS_DIR = '/app/fonts'
 IMAGES_DIR = '/app'
 OUTPUT_DIR = "/app/output"
 
-# Font paths
+# Font paths - Arabic
 NOTO_SANS_ARABIC_BOLD = f'{FONTS_DIR}/noto_sans_arabic/NotoSansArabic-Bold.ttf'
 NOTO_SANS_ARABIC_REGULAR = f'{FONTS_DIR}/noto_sans_arabic/NotoSansArabic-Regular.ttf'
-TIMES_NR_MT_BOLD = f'{FONTS_DIR}/times_nr_mt/Tinos-Bold.ttf'
-TIMES_NR_MT_REGULAR = f'{FONTS_DIR}/times_nr_mt/Tinos-Regular.ttf'
+# English: using built-in Times font (Times-Bold / Times-Roman)
+# No custom font files needed for English text
 
 # Image paths
 SEHA_LOGO = f'{IMAGES_DIR}/شعارصحةseha.jpg'

@@ -34,20 +34,9 @@ class SickLeavePDF(FPDF):
         self.add_font('NotoSansArabic-Bold', '', NOTO_SANS_ARABIC_BOLD)
         self.add_font('NotoSansArabic-Regular', '', NOTO_SANS_ARABIC_REGULAR)
         
-        # خطوط إنجليزية - اختيارية
-        self.times_available = False
-        try:
-            if os.path.exists(TIMES_NR_MT_BOLD) and os.path.exists(TIMES_NR_MT_REGULAR):
-                self.add_font('TimesNRMTPro-Bold', '', TIMES_NR_MT_BOLD)
-                self.add_font('TimesNRMTPro-Regular', '', TIMES_NR_MT_REGULAR)
-                self.times_available = True
-            else:
-                print(f"⚠️ ملفات الخط الإنجليزي غير موجودة: {TIMES_NR_MT_BOLD}")
-        except Exception as e:
-            print(f"⚠️ خطأ في تحميل الخط الإنجليزي: {e}")
-        
-        if not self.times_available:
-            print("استخدام الخطوط المدمجة للنصوص الإنجليزية")
+        # خطوط إنجليزية - استخدام خط Times المدمج (Times-Bold / Times-Roman)
+        # خط Times مدمج في fpdf2 ولا يحتاج ملفات خارجية
+        print("✅ استخدام خط Times المدمج للنصوص الإنجليزية")
 
     def process_arabic_text(self, text):
         """معالجة النص العربي النقي (بدون أرقام/رموز مختلطة)"""
@@ -106,10 +95,7 @@ class SickLeavePDF(FPDF):
         arabic_title = self.process_arabic_text('تقرير إجازة مرضية')
         self.cell(68, 10, arabic_title, align='C')
 
-        if self.times_available:
-            self.set_font('TimesNRMTPro-Bold', size=18)
-        else:
-            self.set_font('Arial', 'B', size=18)
+        self.set_font('Times', 'B', size=18)
         self.set_text_color(44, 62, 119)
         self.set_xy(123, 69)
         self.cell(52, 7, 'Sick Leave Report', align='C')
@@ -258,37 +244,25 @@ class SickLeavePDF(FPDF):
         if row_idx == 1:
             if col_idx in [0, 3]:
                 if col_idx == 0:
-                    if self.times_available:
-                        self.set_font('TimesNRMTPro-Bold', size=13)
-                    else:
-                        self.set_font('Arial', 'B', size=13)
+                    self.set_font('Times', 'B', size=13)
                 else:
                     self.set_font('NotoSansArabic-Bold', size=13)
                 self.set_text_color(*white_color)
             else:
                 if col_idx == 1:
-                    if self.times_available:
-                        self.set_font('TimesNRMTPro-Regular', size=13)
-                    else:
-                        self.set_font('Arial', '', size=13)
+                    self.set_font('Times', '', size=13)
                 else:
                     self.set_font('NotoSansArabic-Regular', size=13)
                 self.set_text_color(*white_color)
         elif col_idx == 0:
-            if self.times_available:
-                self.set_font('TimesNRMTPro-Bold', size=13)
-            else:
-                self.set_font('Arial', 'B', size=13)
+            self.set_font('Times', 'B', size=13)
             self.set_text_color(*blue_color)
         elif col_idx == 1:
             if row_idx == 5:
                 font_size = 11
             else:
                 font_size = 11 if row_idx in [7, 9] else 13
-            if self.times_available:
-                self.set_font('TimesNRMTPro-Regular', size=font_size)
-            else:
-                self.set_font('Arial', '', size=font_size)
+            self.set_font('Times', '', size=font_size)
             self.set_text_color(*dark_blue)
         elif col_idx == 2:
             self.set_font('NotoSansArabic-Regular', size=13)
@@ -330,19 +304,13 @@ class SickLeavePDF(FPDF):
             line2_text = self.process_arabic_text('الرسمي')
             self.cell(72, 6, line2_text, align='C')
 
-            if self.times_available:
-                self.set_font('TimesNRMTPro-Bold', size=9)
-            else:
-                self.set_font('Arial', 'B', size=9)
+            self.set_font('Times', 'B', size=9)
             self.set_text_color(0, 0, 0)
             self.set_xy(45, 320)
             line3_text = "To check the report please visit Seha's offical website"
             self.cell(72, 6, line3_text, align='C')
 
-            if self.times_available:
-                self.set_font('TimesNRMTPro-Regular', size=9)
-            else:
-                self.set_font('Arial', '', size=9)
+            self.set_font('Times', '', size=9)
             self.set_text_color(0, 0, 255)
             self.set_xy(45, 326)
             display_url = QR_DISPLAY_URL if QR_DISPLAY_URL else QR_URL
@@ -372,10 +340,7 @@ class SickLeavePDF(FPDF):
             processed_hospital_name = self.process_arabic_text(hospital_name_ar)
             self.cell(67, 10, processed_hospital_name, align='C')
 
-            if self.times_available:
-                self.set_font('TimesNRMTPro-Bold', size=12)
-            else:
-                self.set_font('Arial', 'B', size=12)
+            self.set_font('Times', 'B', size=12)
             self.set_text_color(0, 0, 0)
             self.set_xy(188, 320)
             self.cell(67, 10, hospital_name_en, align='C')
@@ -385,10 +350,7 @@ class SickLeavePDF(FPDF):
 
             current_time = data.get('time', '6:23 AM')
             current_date = datetime.now().strftime('%A, %d %B %Y')
-            if self.times_available:
-                self.set_font('TimesNRMTPro-Bold', size=12)
-            else:
-                self.set_font('Arial', 'B', size=12)
+            self.set_font('Times', 'B', size=12)
             self.set_text_color(0, 0, 0)
             self.set_xy(11, 339)
             self.cell(20, 6, current_time, align='L')
