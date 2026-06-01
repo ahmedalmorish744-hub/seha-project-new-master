@@ -122,40 +122,22 @@ class SickLeavePDF(FPDF):
                 # ✅ استخدام علامات LRM (U+200E) حول التواريخ الهجرية للحفاظ على تنسيق DD-MM-YYYY
                 # بدون هذه العلامات، خوارزمية BiDi تعكس ترتيب الأرقام
                 lrm = '\u200e'
-                formatted_admission_hijri = self.format_hijri_date(admission_date_hijri)
-                formatted_discharge_hijri = self.format_hijri_date(discharge_date_hijri)
-                duration_ar = f"{duration_days} يوم ({lrm}{formatted_admission_hijri}{lrm} إلى {lrm}{formatted_discharge_hijri}{lrm})"
+                duration_ar = f"{duration_days} يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
 
                 day_word = "day" if duration_days == 1 else "days"
                 duration_en = f"{duration_days} {day_word} ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
             else:
                 lrm = '\u200e'
-                formatted_admission_hijri = self.format_hijri_date(admission_date_hijri)
-                formatted_discharge_hijri = self.format_hijri_date(discharge_date_hijri)
-                duration_ar = f"1 يوم ({lrm}{formatted_admission_hijri}{lrm} إلى {lrm}{formatted_discharge_hijri}{lrm})"
+                duration_ar = f"1 يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
             lrm = '\u200e'
-            formatted_admission_hijri = self.format_hijri_date(admission_date_hijri)
-            formatted_discharge_hijri = self.format_hijri_date(discharge_date_hijri)
-            duration_ar = f"1 يوم ({lrm}{formatted_admission_hijri}{lrm} إلى {lrm}{formatted_discharge_hijri}{lrm})"
+            duration_ar = f"1 يوم ({lrm}{admission_date_hijri}{lrm} إلى {lrm}{discharge_date_hijri}{lrm})"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
-
-    def format_hijri_date(self, date_str):
-        """تحويل تنسيق التاريخ الهجري من YYYY-MM-DD إلى DD-MM-YYYY"""
-        if not date_str:
-            return date_str
-        try:
-            parts = date_str.split('-')
-            if len(parts) == 3:
-                return f"{parts[2]}-{parts[1]}-{parts[0]}"
-            return date_str
-        except Exception:
-            return date_str
 
     def add_table(self, data):
         """إضافة الجدول الرئيسي"""
@@ -200,9 +182,9 @@ class SickLeavePDF(FPDF):
             ['Leave ID', leave_id, '', self.process_arabic_text('رمز الإجازة')],
             ['Leave Duration', duration_en, duration_ar_processed, self.process_arabic_text('مدة الإجازة')],
             ['Admission Date', processed_data.get('admission_date_gregorian', ''),
-             self.format_hijri_date(processed_data.get('admission_date_hijri', '')), self.process_arabic_text('تاريخ الدخول')],
+             processed_data.get('admission_date_hijri', ''), self.process_arabic_text('تاريخ الدخول')],
             ['Discharge Date', processed_data.get('discharge_date_gregorian', ''),
-             self.format_hijri_date(processed_data.get('discharge_date_hijri', '')), self.process_arabic_text('تاريخ الخروج')],
+             processed_data.get('discharge_date_hijri', ''), self.process_arabic_text('تاريخ الخروج')],
             ['Issue Date', processed_data.get('issue_date_gregorian', ''), '',
              self.process_arabic_text('تاريخ إصدار التقرير')],
             ['Name', processed_data.get('patient_name_en', '').upper(), processed_data.get('patient_name_ar', ''),
