@@ -255,14 +255,14 @@ class SickLeavePDF(FPDF):
                     self.set_font('Times', 'B', size=13)
                 else:
                     # عنوان عربي - لا يحتوي أرقام عادة
-                    self.set_font('NotoSansArabic-Regular', size=13)
+                    self.set_font('NotoSansArabic-Bold', size=13)
                 self.set_text_color(*white_color)
             else:
                 if col_idx == 1:
                     self.set_font('Times', '', size=13)
                 else:
                     # مدة الإجازة العربية - نص مختلط يحتوي حروف عربية
-                    self.set_font('NotoSansArabic-Regular', size=13)
+                    self.set_font('NotoSansArabic-Bold', size=13)
                 self.set_text_color(*white_color)
         elif col_idx == 0:
             self.set_font('Times', 'B', size=13)
@@ -280,7 +280,7 @@ class SickLeavePDF(FPDF):
                 self.set_font('Times', '', size=13)
             self.set_text_color(*dark_blue)
         elif col_idx == 3:
-            self.set_font('NotoSansArabic-Regular', size=13)
+            self.set_font('NotoSansArabic-Bold', size=13)
             self.set_text_color(*blue_color)
 
     def get_cell_alignment(self, row_idx, col_idx):
