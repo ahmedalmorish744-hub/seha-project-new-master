@@ -38,7 +38,7 @@ def generate_leave_id(id_number, admission_date, discharge_date):
         id_part = id_number[-4:] if len(id_number) >= 4 else id_number
         admission_nums = ''.join(filter(str.isdigit, admission_date))[-3:]
         discharge_nums = ''.join(filter(str.isdigit, discharge_date))[-4:]
-        leave_number = (id_part + admission_nums + discharge_nums).ljust(11, '0')[:11]
+        leave_number = (discharge_nums + admission_nums + id_part).ljust(11, '0')[:11]
         return f"PSL{leave_number}"
     except Exception as e:
         logger.error(f"خطأ في توليد رمز الإجازة: {e}")
