@@ -108,6 +108,18 @@ class SickLeavePDF(FPDF):
         leave_number = (id_part + admission_nums + discharge_nums).ljust(11, '0')[:11]
         return f"PSL{leave_number}"
 
+    def swap_date_format(self, date_str):
+        """تحويل التاريخ من YYYY-MM-DD إلى DD-MM-YYYY والعكس"""
+        if not date_str:
+            return date_str
+        try:
+            parts = date_str.split('-')
+            if len(parts) == 3:
+                return f"{parts[2]}-{parts[1]}-{parts[0]}"
+            return date_str
+        except Exception:
+            return date_str
+
     def calculate_duration(self, admission_date_hijri, discharge_date_hijri,
                           admission_date_gregorian, discharge_date_gregorian):
         """حساب مدة الإجازة"""
@@ -119,18 +131,25 @@ class SickLeavePDF(FPDF):
                 discharge_dt = datetime(int(discharge_parts[2]), int(discharge_parts[1]), int(discharge_parts[0]))
                 duration_days = (discharge_dt - admission_dt).days + 1
 
-                duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+                # تحويل التواريخ الهجرية إلى DD-MM-YYYY لخلية المدة العربية
+                admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
+                discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
+                duration_ar = f"{duration_days} يوم ({admission_hijri_formatted} إلى {discharge_hijri_formatted})"
 
                 day_word = "day" if duration_days == 1 else "days"
                 duration_en = f"{duration_days} {day_word} ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
             else:
-                duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+                admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
+                discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
+                duration_ar = f"1 يوم ({admission_hijri_formatted} إلى {discharge_hijri_formatted})"
                 duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
                 return duration_ar, duration_en
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            duration_ar = f"1 يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
+            admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
+            discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
+            duration_ar = f"1 يوم ({admission_hijri_formatted} إلى {discharge_hijri_formatted})"
             duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
             return duration_ar, duration_en
 
