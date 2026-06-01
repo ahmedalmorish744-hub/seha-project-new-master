@@ -241,6 +241,15 @@ class SickLeavePDF(FPDF):
             return True
         return False
 
+    def has_arabic_chars(self, text):
+        """فحص هل النص يحتوي على حروف عربية"""
+        if not text:
+            return False
+        for char in text:
+            if '\u0600' <= char <= '\u06FF' or '\u0750' <= char <= '\u077F' or '\uFB50' <= char <= '\uFDFF' or '\uFE70' <= char <= '\uFEFF':
+                return True
+        return False
+
     def set_cell_font_and_color(self, row_idx, col_idx, text):
         blue_color = (54, 111, 181)
         dark_blue = (44, 62, 119)
@@ -250,12 +259,14 @@ class SickLeavePDF(FPDF):
                 if col_idx == 0:
                     self.set_font('Times', 'B', size=13)
                 else:
+                    # عنوان عربي - لا يحتوي أرقام عادة
                     self.set_font('NotoSansArabic-Regular', size=13)
                 self.set_text_color(*white_color)
             else:
                 if col_idx == 1:
                     self.set_font('Times', '', size=13)
                 else:
+                    # مدة الإجازة العربية - نص مختلط يحتوي حروف عربية
                     self.set_font('NotoSansArabic-Regular', size=13)
                 self.set_text_color(*white_color)
         elif col_idx == 0:
@@ -266,7 +277,12 @@ class SickLeavePDF(FPDF):
             self.set_font('Times', '', size=font_size)
             self.set_text_color(*dark_blue)
         elif col_idx == 2:
-            self.set_font('NotoSansArabic-Regular', size=13)
+            # إذا النص أرقام فقط (تواريخ، رقم هوية) استخدم Times مثل الجانب الإنجليزي
+            # إذا النص يحتوي حروف عربية استخدم NotoSansArabic
+            if self.has_arabic_chars(text):
+                self.set_font('NotoSansArabic-Regular', size=13)
+            else:
+                self.set_font('Times', '', size=13)
             self.set_text_color(*dark_blue)
         elif col_idx == 3:
             self.set_font('NotoSansArabic-Regular', size=13)
