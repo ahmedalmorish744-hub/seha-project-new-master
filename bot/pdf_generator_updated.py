@@ -236,9 +236,13 @@ class SickLeavePDF(FPDF):
                 self.rect(current_x, current_y, actual_width, row_height, 'D' if not fill else 'DF')
                 self.set_cell_font_and_color(row_idx, col_idx, cell_text)
                 if cell_text:
-                    self.set_xy(current_x, current_y)
-                    align = self.get_cell_alignment(row_idx, col_idx)
-                    self.cell(actual_width, row_height, cell_text, align=align)
+                    if row_idx == 1 and col_idx == 2:
+                        # خلية المدة العربية - عرض بخطين مع الحفاظ على ترتيب BiDi
+                        self.render_mixed_font_cell_v2(current_x, current_y, actual_width, row_height, cell_text, (255, 255, 255))
+                    else:
+                        self.set_xy(current_x, current_y)
+                        align = self.get_cell_alignment(row_idx, col_idx)
+                        self.cell(actual_width, row_height, cell_text, align=align)
                 current_x += col_width
             current_y += row_height
         self.set_draw_color(217, 217, 217)
@@ -293,30 +297,31 @@ class SickLeavePDF(FPDF):
             segments.append((current_is_arabic, current))
         return segments
 
-    def render_mixed_font_cell(self, x, y, width, height, text):
-        """عرض خلية بخطين: NotoSansArabic للعربي و Times للأرقام والرموز"""
+    def render_mixed_font_cell_v2(self, x, y, width, height, text, color):
+        """عرض خلية بخطين مع الحفاظ على ترتيب BiDi:
+        الأرقام والأقواس بخط Times، الحروف العربية بخط NotoSansArabic"""
         if not text:
             return
-        segments = self.split_mixed_text(text)
-        # حساب العرض الكلي للتوسيط
+        # حساب العرض الكلي لكل حرف بالخط المناسب
         total_width = 0
-        for is_arabic, segment in segments:
-            if is_arabic:
+        for char in text:
+            if self.is_arabic_char(char):
                 self.set_font('NotoSansArabic-Regular', size=13)
             else:
                 self.set_font('Times', '', size=13)
-            total_width += self.get_string_width(segment)
+            total_width += self.get_string_width(char)
         # توسيط أفقي
         start_x = x + (width - total_width) / 2
         self.set_xy(start_x, y)
-        # عرض كل جزء بالخط المناسب
-        for is_arabic, segment in segments:
-            if is_arabic:
+        self.set_text_color(*color)
+        # عرض كل حرف بالخط المناسب باستخدام write للحفاظ على الترتيب
+        for char in text:
+            if self.is_arabic_char(char):
                 self.set_font('NotoSansArabic-Regular', size=13)
             else:
                 self.set_font('Times', '', size=13)
-            seg_width = self.get_string_width(segment)
-            self.cell(seg_width, height, segment, align='L')
+            self.set_text_color(*color)
+            self.write(height, char)
 
     def set_cell_font_and_color(self, row_idx, col_idx, text):
         blue_color = (54, 111, 181)
