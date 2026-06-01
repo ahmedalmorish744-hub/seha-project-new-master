@@ -16,7 +16,6 @@ from config_updated import QR_DISPLAY_URL
 import arabic_reshaper
 from bidi.algorithm import get_display
 
-
 class SickLeavePDF(FPDF):
     def __init__(self):
         super().__init__(orientation='P', unit='mm', format=(PDF_WIDTH, PDF_HEIGHT))
@@ -53,25 +52,40 @@ class SickLeavePDF(FPDF):
             print(f"خطأ في معالجة النص العربي: {e}")
             return text
 
+    # ═══════════════════════════════════════════════════════════════
+    # ✅ FIX #1: NEW FUNCTION - safe_arabic_mixed
+    # يحافظ على الرموز والأرقام والتواريخ في ترتيبها الأصلي
+    # ═══════════════════════════════════════════════════════════════
     def safe_arabic_mixed(self, text):
         """
         معالجة آمنة للنص المختلط (عربي + أرقام + رموز).
-        تحافظ على ترتيب النص كما هو، وتقوم فقط بتشكيل المقاطع العربية.
+        تقوم بـ:
+        1. تقسيم النص إلى قطع: عربية / غير عربية
+        2. معالجة القطع العربية فقط بـ reshape + get_display
+        3. الحفاظ على الأرقام والتواريخ والأقواس والشرطات في مكانها
+        4. عكس ترتيب القطع النهائي ليتوافق مع عرض RTL في PDF
         """
         if not text:
             return ""
         try:
+            # ✅ التصحيح: استخدام \u0600-\u06FF لمطابقة أحرف اليونيكود العربية فعلياً
             tokens = re.findall(r'[\u0600-\u06FF]+|[^\u0600-\u06FF]+', text)
 
             processed_tokens = []
             for token in tokens:
-                if re.search(r'[\u0600-\u06FF]', token):
-                    shaped = arabic_reshaper.reshape(token)
-                    processed_tokens.append(get_display(shaped))
+                # ✅ التصحيح: نفس التعديل في شرط المطابقة
+                if re.match(r'[\u0600-\u06FF]', token):
+                    # قطعة عربية → reshape + BiDi
+                    reshaped = arabic_reshaper.reshape(token)
+                    bidi = get_display(reshaped)
+                    processed_tokens.append(bidi)
                 else:
+                    # قطعة غير عربية (أرقام، رموز، إنجليزي) → احتفظ كما هي
                     processed_tokens.append(token)
 
-            return "".join(processed_tokens)
+            # عكس ترتيب القطع لعرضها من اليمين لليسار في PDF
+            result = "".join(reversed(processed_tokens))
+            return result
         except Exception as e:
             print(f"خطأ في safe_arabic_mixed: {e}")
             return text
@@ -113,7 +127,7 @@ class SickLeavePDF(FPDF):
         return f"PSL{leave_number}"
 
     def calculate_duration(self, admission_date_hijri, discharge_date_hijri,
-                           admission_date_gregorian, discharge_date_gregorian):
+                          admission_date_gregorian, discharge_date_gregorian):
         """حساب مدة الإجازة"""
         try:
             admission_parts = admission_date_gregorian.split('-')
@@ -123,6 +137,7 @@ class SickLeavePDF(FPDF):
                 discharge_dt = datetime(int(discharge_parts[2]), int(discharge_parts[1]), int(discharge_parts[0]))
                 duration_days = (discharge_dt - admission_dt).days + 1
 
+                # ✅ FIX #2: استخدام safe_arabic_mixed للمدة
                 duration_ar = f"{duration_days} يوم ({admission_date_hijri} إلى {discharge_date_hijri})"
 
                 day_word = "day" if duration_days == 1 else "days"
@@ -173,10 +188,10 @@ class SickLeavePDF(FPDF):
             else:
                 processed_data[key] = value
 
-        # استخدام safe_arabic_mixed للنصوص المختلطة
+        # ✅ FIX #3: استخدام safe_arabic_mixed للنصوص المختلطة
         duration_ar_processed = self.safe_arabic_mixed(duration_ar)
 
-        # استخدام safe_arabic_mixed لخلية رقم الهوية/الإقامة
+        # ✅ FIX #4: استخدام safe_arabic_mixed لخلية رقم الهوية/الإقامة
         id_label_processed = self.safe_arabic_mixed('رقم الهوية / الإقامة')
 
         table_data = [
