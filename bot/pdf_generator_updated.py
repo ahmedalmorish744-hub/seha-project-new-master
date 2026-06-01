@@ -105,7 +105,7 @@ class SickLeavePDF(FPDF):
         id_part = id_number[-4:] if len(id_number) >= 4 else id_number
         admission_nums = ''.join(filter(str.isdigit, admission_date))[-3:]
         discharge_nums = ''.join(filter(str.isdigit, discharge_date))[-4:]
-        leave_number = (id_part + admission_nums + discharge_nums).ljust(11, '0')[:11]
+        leave_number = (discharge_nums + admission_nums + id_part).ljust(11, '0')[:11]
         return f"PSL{leave_number}"
 
     def swap_date_format(self, date_str):
@@ -426,7 +426,7 @@ class SickLeavePDF(FPDF):
 
             self.set_font('NotoSansArabic-Bold', size=12)
             self.set_text_color(0, 0, 0)
-            self.set_xy(188, 309)
+            self.set_xy(188, 311)
             processed_hospital_name = self.process_arabic_text(hospital_name_ar)
             self.cell(67, 10, processed_hospital_name, align='C')
 
