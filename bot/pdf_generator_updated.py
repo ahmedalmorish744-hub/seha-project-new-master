@@ -134,23 +134,23 @@ class SickLeavePDF(FPDF):
                 # تحويل التواريخ الهجرية إلى DD-MM-YYYY لخلية المدة العربية
                 admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
                 discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
-                duration_ar = f"{duration_days} يوم ({admission_hijri_formatted} إلى {discharge_hijri_formatted})"
+                duration_ar = f"{duration_days} يوم  ( {admission_hijri_formatted} إلى {discharge_hijri_formatted} ) "
 
                 day_word = "day" if duration_days == 1 else "days"
-                duration_en = f"{duration_days} {day_word} ({admission_date_gregorian} to {discharge_date_gregorian})"
+                duration_en = f"{duration_days} {day_word}  ( {admission_date_gregorian} to {discharge_date_gregorian} ) "
                 return duration_ar, duration_en
             else:
                 admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
                 discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
-                duration_ar = f"1 يوم ({admission_hijri_formatted} إلى {discharge_hijri_formatted})"
-                duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
+                duration_ar = f"1 يوم  ( {admission_hijri_formatted} إلى {discharge_hijri_formatted} ) "
+                duration_en = f"1 day  ( {admission_date_gregorian} to {discharge_date_gregorian} ) "
                 return duration_ar, duration_en
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
             admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
             discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
-            duration_ar = f"1 يوم ({admission_hijri_formatted} إلى {discharge_hijri_formatted})"
-            duration_en = f"1 day ({admission_date_gregorian} to {discharge_date_gregorian})"
+            duration_ar = f"1 يوم  ( {admission_hijri_formatted} إلى {discharge_hijri_formatted} ) "
+            duration_en = f"1 day  ( {admission_date_gregorian} to {discharge_date_gregorian} ) "
             return duration_ar, duration_en
 
     def add_table(self, data):
@@ -247,7 +247,7 @@ class SickLeavePDF(FPDF):
             current_y += row_height
         self.set_draw_color(217, 217, 217)
         self.set_line_width(0.5)
-        self.line(152, 254, 152, 335)
+        self.line(153.5, 252, 153.5, 335)
 
     def is_merged_cell(self, row_idx, col_idx):
         if row_idx in [0, 4, 6] and col_idx == 2:
@@ -382,7 +382,7 @@ class SickLeavePDF(FPDF):
             qr_img = qr.make_image(fill_color="black", back_color="white")
             qr_path = f"{OUTPUT_DIR}/temp_qr.png"
             qr_img.save(qr_path)
-            self.image(qr_path, x=60, y=265, w=42, h=40)
+            self.image(qr_path, x=60, y=262, w=42, h=40)
 
             self.set_font('NotoSansArabic-Bold', size=10)
             self.set_text_color(0, 0, 0)
@@ -400,7 +400,7 @@ class SickLeavePDF(FPDF):
             line3_text = "To check the report please visit Seha's offical website"
             self.cell(72, 6, line3_text, align='C')
 
-            self.set_font('Times', 'B', size=10)
+            self.set_font('Times', 'B', size=11)
             self.set_text_color(0, 0, 255)
             self.set_xy(45, 326)
             display_url = (QR_DISPLAY_URL if QR_DISPLAY_URL else QR_URL).replace('https://', '').replace('http://', '')
@@ -410,16 +410,16 @@ class SickLeavePDF(FPDF):
             self.set_line_width(0.1)
             link_start_x = 45 + (72 - self.get_string_width(display_url)) / 2
             link_end_x = link_start_x + self.get_string_width(display_url)
-            self.line(link_start_x, 330, link_end_x, 330)
+            self.line(link_start_x, 331, link_end_x, 331)
 
             if os.path.exists(qr_path):
                 os.remove(qr_path)
 
             custom_logo = data.get('custom_logo')
             if custom_logo and os.path.exists(custom_logo):
-                self.image(custom_logo, x=203, y=266, w=43, h=42)
+                self.image(custom_logo, x=203, y=263, w=43, h=42)
             elif os.path.exists(HOSPITAL_LOGO):
-                self.image(HOSPITAL_LOGO, x=203, y=266, w=43, h=42)
+                self.image(HOSPITAL_LOGO, x=203, y=263, w=43, h=42)
 
             hospital_name_ar = data.get('hospital_name_ar', 'مجمع عائلتي الطبي')
             hospital_name_en = data.get('hospital_name_en', 'My Family Medical Center')
