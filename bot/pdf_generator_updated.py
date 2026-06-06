@@ -239,6 +239,9 @@ class SickLeavePDF(FPDF):
                     if row_idx == 1 and col_idx == 2:
                         # خلية المدة العربية - عرض بخطين مع الحفاظ على ترتيب BiDi
                         self.render_mixed_font_cell_v2(current_x, current_y, actual_width, row_height, cell_text, (255, 255, 255))
+                    elif (row_idx == 5 and col_idx in [1, 2]) or (row_idx == 9 and col_idx in [1, 2]):
+                        # خلية الاسم أو الطبيب - عرض بسطرين إذا كان طويلاً
+                        self.render_long_name_cell(current_x, current_y, actual_width, row_height, cell_text, row_idx, col_idx)
                     else:
                         self.set_xy(current_x, current_y)
                         align = self.get_cell_alignment(row_idx, col_idx)
@@ -296,6 +299,77 @@ class SickLeavePDF(FPDF):
         if current:
             segments.append((current_is_arabic, current))
         return segments
+
+    def render_long_name_cell(self, x, y, width, height, text, row_idx, col_idx):
+        """عرض خلية الاسم/الطبيب الطويل بسطرين مع توسيط عمودي وأفقي"""
+        if not text:
+            return
+        # تحديد الخط والحجم
+        self.set_cell_font_and_color(row_idx, col_idx, text)
+        font_name = self.font_family
+        font_style = self.font_style
+        font_size = self.font_size_pt
+
+        text_width = self.get_string_width(text)
+        padding = 4  # مسافة أمان من الجوانب
+        available_width = width - padding * 2
+
+        if text_width <= available_width:
+            # النص يكفي بسطر واحد - عرض عادي بالتوسيط
+            self.set_xy(x, y)
+            self.cell(width, height, text, align='C')
+            return
+
+        # النص طويل - تقسيمه إلى سطرين
+        # البحث عن نقطة القطع المثالية: آخر مسافة قبل المنتصف أو بعد المنتصف
+        words = text.split(' ')
+        line1 = ''
+        line2 = ''
+        found_split = False
+
+        for i in range(len(words), 0, -1):
+            test_line = ' '.join(words[:i])
+            if self.get_string_width(test_line) <= available_width:
+                line1 = test_line
+                line2 = ' '.join(words[i:])
+                # إذا السطر الثاني طويل جداً، نقطع من منتصف الكلمة الأخيرة
+                if self.get_string_width(line2) > available_width and line2:
+                    # قطع الكلمة الأخيرة في السطر الأول بشرطة
+                    last_word = words[i-1] if i > 0 else ''
+                    # نحاول نقطع الكلمة الأخيرة
+                    for cut in range(len(last_word)-1, 0, -1):
+                        partial = last_word[:cut] + '-'
+                        test_line1 = ' '.join(words[:i-1] + [partial]) if i > 1 else partial
+                        remainder = last_word[cut:] + ' ' + ' '.join(words[i:]) if i < len(words) else last_word[cut:]
+                        if self.get_string_width(test_line1) <= available_width and self.get_string_width(remainder) <= available_width:
+                            line1 = test_line1
+                            line2 = remainder
+                            break
+                found_split = True
+                break
+
+        if not found_split or not line2:
+            # لا نجد نقطة قطع جيدة - عرض بسطر واحد
+            self.set_xy(x, y)
+            self.cell(width, height, text, align='C')
+            return
+
+        # حساب ارتفاع السطر وتوسيط عمودي
+        line_height = height / 2
+        # توسيط عمودي: حساب الإزاحة من الأعلى
+        total_text_height = line_height * 2
+        y_offset = y + (height - total_text_height) / 2
+
+        # إعادة تعيين الخط (لأن get_string_width قد تغيره)
+        self.set_font(font_name, font_style, size=font_size)
+
+        # السطر الأول
+        self.set_xy(x, y_offset)
+        self.cell(width, line_height, line1, align='C')
+
+        # السطر الثاني
+        self.set_xy(x, y_offset + line_height)
+        self.cell(width, line_height, line2, align='C')
 
     def render_mixed_font_cell_v2(self, x, y, width, height, text, color):
         """عرض خلية بخطين مع الحفاظ على ترتيب BiDi:
@@ -426,13 +500,13 @@ class SickLeavePDF(FPDF):
 
             self.set_font('NotoSansArabic-Bold', size=12)
             self.set_text_color(0, 0, 0)
-            self.set_xy(188, 311)
+            self.set_xy(191, 311)
             processed_hospital_name = self.process_arabic_text(hospital_name_ar)
             self.cell(67, 10, processed_hospital_name, align='C')
 
             self.set_font('Times', 'B', size=12)
             self.set_text_color(0, 0, 0)
-            self.set_xy(188, 320)
+            self.set_xy(191, 320)
             self.cell(67, 10, hospital_name_en, align='C')
 
             if os.path.exists(HEALTH_INFO_CENTER_LOGO):
@@ -462,7 +536,7 @@ def generate_sick_leave_pdf(data, user_id):
         pdf.add_footer_elements(data)
         id_number = data.get('id_number', 'UNKNOWN')
         issue_date = data.get('issue_date_gregorian', datetime.now().strftime('%d-%m-%Y'))
-        filename = f"Sick Leave{id_number}_{issue_date.replace('-', '')}.pdf"
+        filename = "sickleave.pdf"
         filepath = os.path.join(OUTPUT_DIR, filename)
         pdf.output(filepath)
         return filepath

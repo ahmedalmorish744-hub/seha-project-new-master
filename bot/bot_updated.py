@@ -145,7 +145,7 @@ async def handle_formatted_message(update: Update, context: ContextTypes.DEFAULT
             with open(pdf_path, 'rb') as pdf_file:
                 await update.message.reply_document(
                     document=pdf_file,
-                    filename=f"Sick_Leave_{final_data.get('id_number', 'Report')}.pdf",
+                    filename="sickleave.pdf",
                     caption="✅ تم إنشاء تقرير الإجازة المرضية بنجاح!"
                 )
             
@@ -597,7 +597,7 @@ async def generate_pdf_report(update: Update, context: ContextTypes.DEFAULT_TYPE
             with open(pdf_path, 'rb') as pdf_file:
                 await update.message.reply_document(
                     document=pdf_file,
-                    filename=f"Sick_Leave_{data.get('id_number', 'Report')}.pdf",
+                    filename="sickleave.pdf",
                     caption="✅ تم إنشاء تقرير الإجازة المرضية بنجاح!"
                 )
             
@@ -658,7 +658,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 with open(pdf_path, 'rb') as pdf_file:
                     await update.message.reply_document(
                         document=pdf_file,
-                        filename=f"Sick_Leave_With_Logo_{data.get('id_number', 'Report')}.pdf",
+                        filename="sickleave.pdf",
                         caption="✅ تم إنشاء التقرير مع الشعار المخصص بنجاح!"
                     )
                 
