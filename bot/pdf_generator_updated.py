@@ -131,25 +131,25 @@ class SickLeavePDF(FPDF):
                 discharge_dt = datetime(int(discharge_parts[2]), int(discharge_parts[1]), int(discharge_parts[0]))
                 duration_days = (discharge_dt - admission_dt).days + 1
 
-                # تحويل التواريخ الهجرية إلى DD-MM-YYYY لخلية المدة العربية
-                admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
-                discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
-                duration_ar = f"{duration_days} يوم  ( {admission_hijri_formatted} إلى {discharge_hijri_formatted} ) "
+                # تحويل التواريخ الميلادية إلى DD-MM-YYYY لخلية المدة العربية
+                admission_gregorian_formatted = self.swap_date_format(admission_date_gregorian)
+                discharge_gregorian_formatted = self.swap_date_format(discharge_date_gregorian)
+                duration_ar = f"{duration_days} يوم  ( {admission_gregorian_formatted} إلى {discharge_gregorian_formatted} ) "
 
                 day_word = "day" if duration_days == 1 else "days"
                 duration_en = f"{duration_days} {day_word}  ( {admission_date_gregorian} to {discharge_date_gregorian} ) "
                 return duration_ar, duration_en
             else:
-                admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
-                discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
-                duration_ar = f"1 يوم  ( {admission_hijri_formatted} إلى {discharge_hijri_formatted} ) "
+                admission_gregorian_formatted = self.swap_date_format(admission_date_gregorian)
+                discharge_gregorian_formatted = self.swap_date_format(discharge_date_gregorian)
+                duration_ar = f"1 يوم  ( {admission_gregorian_formatted} إلى {discharge_gregorian_formatted} ) "
                 duration_en = f"1 day  ( {admission_date_gregorian} to {discharge_date_gregorian} ) "
                 return duration_ar, duration_en
         except Exception as e:
             print(f"خطأ في حساب المدة: {e}")
-            admission_hijri_formatted = self.swap_date_format(admission_date_hijri)
-            discharge_hijri_formatted = self.swap_date_format(discharge_date_hijri)
-            duration_ar = f"1 يوم  ( {admission_hijri_formatted} إلى {discharge_hijri_formatted} ) "
+            admission_gregorian_formatted = self.swap_date_format(admission_date_gregorian)
+            discharge_gregorian_formatted = self.swap_date_format(discharge_date_gregorian)
+            duration_ar = f"1 يوم  ( {admission_gregorian_formatted} إلى {discharge_gregorian_formatted} ) "
             duration_en = f"1 day  ( {admission_date_gregorian} to {discharge_date_gregorian} ) "
             return duration_ar, duration_en
 
@@ -196,9 +196,9 @@ class SickLeavePDF(FPDF):
             ['Leave ID', leave_id, '', self.process_arabic_text('رمز الإجازة')],
             ['Leave Duration', duration_en, duration_ar_processed, self.process_arabic_text('مدة الإجازة')],
             ['Admission Date', processed_data.get('admission_date_gregorian', ''),
-             processed_data.get('admission_date_hijri', ''), self.process_arabic_text('تاريخ الدخول')],
+             processed_data.get('admission_date_gregorian', ''), self.process_arabic_text('تاريخ الدخول')],
             ['Discharge Date', processed_data.get('discharge_date_gregorian', ''),
-             processed_data.get('discharge_date_hijri', ''), self.process_arabic_text('تاريخ الخروج')],
+             processed_data.get('discharge_date_gregorian', ''), self.process_arabic_text('تاريخ الخروج')],
             ['Issue Date', processed_data.get('issue_date_gregorian', ''), '',
              self.process_arabic_text('تاريخ إصدار التقرير')],
             ['Name', processed_data.get('patient_name_en', '').upper(), processed_data.get('patient_name_ar', ''),
@@ -500,13 +500,13 @@ class SickLeavePDF(FPDF):
 
             self.set_font('NotoSansArabic-Bold', size=12)
             self.set_text_color(0, 0, 0)
-            self.set_xy(191, 311)
+            self.set_xy(191, 305)
             processed_hospital_name = self.process_arabic_text(hospital_name_ar)
             self.cell(67, 10, processed_hospital_name, align='C')
 
             self.set_font('Times', 'B', size=12)
             self.set_text_color(0, 0, 0)
-            self.set_xy(191, 320)
+            self.set_xy(191, 315)
             self.cell(67, 10, hospital_name_en, align='C')
 
             if os.path.exists(HEALTH_INFO_CENTER_LOGO):
